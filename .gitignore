@@ -1,0 +1,35 @@
+node_modules/
+.cache/
+.tmp/
+.tools/
+.worktrees/
+.public-mirror/
+launcher/bin/
+launcher/obj/
+
+# Local state and secrets
+data/
+.env
+.env.*
+*.local
+
+# Build and packaged output
+dist/
+.packages/
+.playwright-cli/
+public/app/
+
+# Generated reports and logs
+security-report.json
+logs/
+output/
+test-results/
+*.log
+*.tmp
+*.tsbuildinfo
+
+# OS/editor noise
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

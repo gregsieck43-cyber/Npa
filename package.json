@@ -1,0 +1,37 @@
+{
+  "name": "local-claude-workbench",
+  "version": "0.2.0",
+  "private": true,
+  "type": "module",
+  "description": "Local-first Chinese AI workbench with durable tasks and recoverable context.",
+  "engines": {
+    "node": ">=24.18.0 <25"
+  },
+  "scripts": {
+    "prestart": "npm run build",
+    "start": "node server.js",
+    "dev": "vite --host 127.0.0.1 --port 5173",
+    "build": "tsc -b && vite build",
+    "typecheck": "tsc -b --pretty false",
+    "test": "npm run test:server && npm run test:frontend",
+    "test:server": "node --test test/*.test.mjs",
+    "test:frontend": "vitest run",
+    "test:ui": "playwright test test/ui-smoke.spec.cjs",
+    "test:soak": "node --test test/soak-72h.test.mjs",
+    "package:win": "powershell -NoProfile -ExecutionPolicy Bypass -File tools/package-win.ps1",
+    "release:gate": "node tools/release-gate.js"
+  },
+  "dependencies": {
+    "react": "19.2.8",
+    "react-dom": "19.2.8"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.62.1",
+    "@types/react": "19.2.18",
+    "@types/react-dom": "19.2.4",
+    "@vitejs/plugin-react": "6.0.5",
+    "typescript": "7.0.2",
+    "vite": "8.2.0",
+    "vitest": "4.1.10"
+  }
+}
