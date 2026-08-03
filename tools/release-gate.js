@@ -105,6 +105,7 @@ export async function collectReleaseGateIssues(targetDistDir = distDir) {
     "ClaudeWorkbench.zip",
     "ClaudeWorkbench/node.exe",
     "ClaudeWorkbench/node-LICENSE.txt",
+    "ClaudeWorkbench/LICENSE",
     "ClaudeWorkbench/server.js",
     "ClaudeWorkbench/code-cli.js",
     "ClaudeWorkbench/frontend/dist/index.html"
@@ -131,6 +132,7 @@ export async function collectReleaseGateIssues(targetDistDir = distDir) {
       "ClaudeWorkbench.exe",
       "ClaudeWorkbench/node.exe",
       "ClaudeWorkbench/node-LICENSE.txt",
+      "ClaudeWorkbench/LICENSE",
       "ClaudeWorkbench/server.js",
       "ClaudeWorkbench/code-cli.js",
       "ClaudeWorkbench/frontend/dist/index.html"

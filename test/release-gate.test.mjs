@@ -12,6 +12,7 @@ async function makeRelease(name) {
     "ClaudeWorkbench.zip",
     "ClaudeWorkbench/node.exe",
     "ClaudeWorkbench/node-LICENSE.txt",
+    "ClaudeWorkbench/LICENSE",
     "ClaudeWorkbench/server.js",
     "ClaudeWorkbench/code-cli.js",
     "ClaudeWorkbench/frontend/dist/index.html"
@@ -23,6 +24,7 @@ async function makeRelease(name) {
       "ClaudeWorkbench.exe",
       "ClaudeWorkbench/node.exe",
       "ClaudeWorkbench/node-LICENSE.txt",
+      "ClaudeWorkbench/LICENSE",
       "ClaudeWorkbench/server.js",
       "ClaudeWorkbench/code-cli.js",
       "ClaudeWorkbench/frontend/dist/index.html"
@@ -32,10 +34,12 @@ async function makeRelease(name) {
   return root;
 }
 
-test("release gate requires the launcher, runtime, backend, CLI and built frontend", async () => {
+test("release gate requires the launcher, runtime, license, backend, CLI and built frontend", async () => {
   const root = await makeRelease("release-ok");
   try {
     assert.deepEqual(await collectReleaseGateIssues(root), []);
+    await rm(path.join(root, "ClaudeWorkbench", "LICENSE"));
+    assert.ok((await collectReleaseGateIssues(root)).some((issue) => issue.includes("LICENSE")));
     await rm(path.join(root, "ClaudeWorkbench", "node.exe"));
     assert.ok((await collectReleaseGateIssues(root)).some((issue) => issue.includes("node.exe")));
   } finally {

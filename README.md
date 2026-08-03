@@ -110,6 +110,10 @@ The context workspace is a clean-room implementation based on the high-level mec
 - Review every requested permission and diff before approving an external side effect.
 - Report a suspected credential exposure privately and rotate the affected credential immediately.
 
+## License
+
+Unless otherwise noted, the source code in this repository is licensed under the [Apache License 2.0](LICENSE). Third-party names, logos, trademarks, and referenced materials remain the property of their respective owners.
+
 ## Current boundaries
 
 NPA is currently a single-user local application. It does not provide multi-user tenancy, cloud synchronization, a general workflow-canvas product, or reinforcement-learning training. Merge, push, branch deletion, and other high-impact Git operations remain approval-gated.
