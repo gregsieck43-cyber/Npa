@@ -318,7 +318,7 @@ async function main() {
   const app = await createWorkbenchServer();
   await app.listen();
   const address = app.server.address();
-  process.stdout.write(`Local Claude Workbench listening on http://127.0.0.1:${address.port}\n`);
+  process.stdout.write(`NPA local workbench listening on http://127.0.0.1:${address.port}\n`);
   const shutdown = async () => {
     try { app.runner.checkpointAll(); } catch { /* best effort on process shutdown */ }
     await app.close();

@@ -11,7 +11,7 @@ Push-Location $root
 try {
   $existing = Get-NetTCPConnection -LocalPort 3137 -State Listen -ErrorAction SilentlyContinue
   if ($existing) {
-    Write-Host "Local Claude Workbench is already running at http://localhost:3137"
+    Write-Host "NPA 本地智能工作台已在 http://localhost:3137 运行"
     return
   }
 
@@ -24,7 +24,7 @@ try {
     if ($LASTEXITCODE -ne 0) { throw "Frontend build failed." }
   }
 
-  Write-Host "Local Claude Workbench starting at http://localhost:3137"
+  Write-Host "NPA 本地智能工作台正在 http://localhost:3137 启动"
   Write-Host "Keep this PowerShell window open while using the app."
   & $node server.js
 }

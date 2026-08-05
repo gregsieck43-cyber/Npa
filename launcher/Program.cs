@@ -70,7 +70,7 @@ namespace ClaudeWorkbenchLauncher
             }
             catch (Exception ex)
             {
-                return Fail(selfTest, "启动本地智能工作台失败: " + ex.Message);
+                return Fail(selfTest, "启动 NPA 本地智能工作台失败: " + ex.Message);
             }
         }
 
@@ -111,7 +111,7 @@ namespace ClaudeWorkbenchLauncher
         private static int Fail(bool selfTest, string message)
         {
             if (selfTest) Console.Error.WriteLine(message);
-            else MessageBox.Show(message, "本地智能工作台");
+            else MessageBox.Show(message, "NPA · 本地智能工作台");
             return 1;
         }
 
@@ -190,13 +190,13 @@ namespace ClaudeWorkbenchLauncher
             {
                 server.Dispose();
                 ActiveServer = null;
-                MessageBox.Show("本地服务没有启动。可以尝试运行 ClaudeWorkbench.exe --cli 进入终端模式。", "本地智能工作台");
+                MessageBox.Show("本地服务没有启动。可以尝试运行 ClaudeWorkbench.exe --cli 进入终端模式。", "NPA · 本地智能工作台");
                 return 1;
             }
 
             Form form = new Form
             {
-                Text = "本地智能工作台",
+                Text = "NPA · 本地智能工作台",
                 Width = 1440,
                 Height = 900,
                 StartPosition = FormStartPosition.CenterScreen
@@ -219,7 +219,7 @@ namespace ClaudeWorkbenchLauncher
                 // local server and long-running jobs remain alive in the tray.
                 e.Cancel = true;
                 form.Hide();
-                if (TrayIcon != null) TrayIcon.ShowBalloonTip(1200, "本地智能工作台", "工作台已最小化到托盘，服务仍在运行。", ToolTipIcon.Info);
+                if (TrayIcon != null) TrayIcon.ShowBalloonTip(1200, "NPA · 本地智能工作台", "工作台已最小化到托盘，服务仍在运行。", ToolTipIcon.Info);
             };
             form.FormClosed += delegate
             {
@@ -236,7 +236,7 @@ namespace ClaudeWorkbenchLauncher
                 }
                 catch (Exception ex)
                 {
-                    MessageBox.Show("WebView2 加载失败: " + ex.Message, "本地智能工作台");
+                    MessageBox.Show("WebView2 加载失败: " + ex.Message, "NPA · 本地智能工作台");
                 }
             };
             form.Resize += delegate
@@ -313,7 +313,7 @@ namespace ClaudeWorkbenchLauncher
             }
             NotifyIcon tray = new NotifyIcon
             {
-                Text = "本地智能工作台",
+                Text = "NPA · 本地智能工作台",
                 Icon = icon,
                 ContextMenuStrip = TrayMenu,
                 Visible = true
@@ -386,14 +386,14 @@ namespace ClaudeWorkbenchLauncher
 
         private static void ShowStartupMessage(string message, MessageBoxIcon icon)
         {
-            MessageBox.Show(message, "本地智能工作台", MessageBoxButtons.OK, icon);
+            MessageBox.Show(message, "NPA · 本地智能工作台", MessageBoxButtons.OK, icon);
         }
 
         private static void ShowStartupSuccess(bool enabled)
         {
             if (TrayIcon != null)
             {
-                TrayIcon.ShowBalloonTip(1600, "本地智能工作台", enabled ? "开机自启已启用。" : "开机自启已关闭。", ToolTipIcon.Info);
+                TrayIcon.ShowBalloonTip(1600, "NPA · 本地智能工作台", enabled ? "开机自启已启用。" : "开机自启已关闭。", ToolTipIcon.Info);
             }
         }
 
@@ -428,11 +428,11 @@ namespace ClaudeWorkbenchLauncher
             try
             {
                 await TrayRequestWithFallback(paths, "POST", new { });
-                TrayIcon?.ShowBalloonTip(1200, "本地智能工作台", label + "请求已提交。", ToolTipIcon.Info);
+                TrayIcon?.ShowBalloonTip(1200, "NPA · 本地智能工作台", label + "请求已提交。", ToolTipIcon.Info);
             }
             catch (Exception ex)
             {
-                TrayIcon?.ShowBalloonTip(1800, "本地智能工作台", label + "失败: " + ex.Message, ToolTipIcon.Warning);
+                TrayIcon?.ShowBalloonTip(1800, "NPA · 本地智能工作台", label + "失败: " + ex.Message, ToolTipIcon.Warning);
             }
         }
 
@@ -443,11 +443,11 @@ namespace ClaudeWorkbenchLauncher
                 string body = await TrayRequestWithFallback(new[] { "/api/v1/approvals?status=pending", "/api/approvals" }, "GET", null);
                 int count = CountPendingApprovals(body);
                 string message = count >= 0 ? "当前待审批项: " + count : "待审批列表已刷新。";
-                TrayIcon?.ShowBalloonTip(1800, "本地智能工作台", message, ToolTipIcon.Info);
+                TrayIcon?.ShowBalloonTip(1800, "NPA · 本地智能工作台", message, ToolTipIcon.Info);
             }
             catch (Exception ex)
             {
-                TrayIcon?.ShowBalloonTip(1800, "本地智能工作台", "待审批查询失败: " + ex.Message, ToolTipIcon.Warning);
+                TrayIcon?.ShowBalloonTip(1800, "NPA · 本地智能工作台", "待审批查询失败: " + ex.Message, ToolTipIcon.Warning);
             }
         }
 
@@ -464,7 +464,7 @@ namespace ClaudeWorkbenchLauncher
             }
             catch (Exception ex)
             {
-                TrayIcon?.ShowBalloonTip(1800, "本地智能工作台", "检查点保存失败: " + ex.Message, ToolTipIcon.Warning);
+                TrayIcon?.ShowBalloonTip(1800, "NPA · 本地智能工作台", "检查点保存失败: " + ex.Message, ToolTipIcon.Warning);
             }
             try
             {
@@ -472,7 +472,7 @@ namespace ClaudeWorkbenchLauncher
             }
             catch (Exception ex)
             {
-                TrayIcon?.ShowBalloonTip(1800, "本地智能工作台", "暂停任务失败: " + ex.Message, ToolTipIcon.Warning);
+                TrayIcon?.ShowBalloonTip(1800, "NPA · 本地智能工作台", "暂停任务失败: " + ex.Message, ToolTipIcon.Warning);
             }
             if (form != null && !form.IsDisposed)
             {
@@ -577,7 +577,7 @@ namespace ClaudeWorkbenchLauncher
             if (!WaitForServer(server.Url, root))
             {
                 server.Dispose();
-                MessageBox.Show("本地服务没有启动。可以尝试运行 ClaudeWorkbench.exe --cli 进入终端模式。", "本地智能工作台");
+                MessageBox.Show("本地服务没有启动。可以尝试运行 ClaudeWorkbench.exe --cli 进入终端模式。", "NPA · 本地智能工作台");
                 return 1;
             }
 
@@ -585,13 +585,13 @@ namespace ClaudeWorkbenchLauncher
             if (string.IsNullOrWhiteSpace(chrome))
             {
                 server.Dispose();
-                MessageBox.Show("未找到 Google Chrome。请安装 Chrome，或把 chrome.exe 加入 PATH 后再运行 ClaudeWorkbench.exe --chrome。", "本地智能工作台");
+                MessageBox.Show("未找到 Google Chrome。请安装 Chrome，或把 chrome.exe 加入 PATH 后再运行 ClaudeWorkbench.exe --chrome。", "NPA · 本地智能工作台");
                 return 1;
             }
 
             Form form = new Form
             {
-                Text = "本地智能工作台 - Chrome",
+                Text = "NPA · 本地智能工作台 - Chrome",
                 Width = 520,
                 Height = 170,
                 StartPosition = FormStartPosition.CenterScreen,

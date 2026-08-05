@@ -1,0 +1,28 @@
+name: Bug report
+description: Report a reproducible problem in NPA
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: Do not include API keys, connector secrets, local data, logs, or private paths. Use SECURITY.md for vulnerabilities.
+  - type: input
+    id: version
+    attributes:
+      label: Version or commit
+      placeholder: 0.2.0 or c2b4730
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Reproduction
+      description: Tell us what you expected and what happened.
+    validations:
+      required: true
+  - type: textarea
+    id: checks
+    attributes:
+      label: Checks and environment
+      description: Include the command, operating system, Node version, and relevant test output.
+    validations:
+      required: true

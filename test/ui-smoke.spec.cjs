@@ -179,7 +179,17 @@ test("静谧任务台多视口 UI smoke 与在线任务创建", async () => {
     desktop = await browser.newPage({ viewport: { width: 1440, height: 920 } });
     pageErrors.push(...observePage(desktop));
     await desktop.goto(appUrl, { waitUntil: "networkidle", timeout: 20_000 });
-    await expect(desktop).toHaveTitle("静谧任务台 · Local Workbench");
+    await expect(desktop).toHaveTitle("NPA · 本地智能工作台");
+    const desktopBrand = desktop.locator('[data-testid="npa-brand-mark"] img').first();
+    await expect(desktopBrand).toBeVisible();
+    await expect.poll(() => desktopBrand.evaluate((image) => image.complete && image.naturalWidth >= 64)).toBe(true);
+    const favicon = await desktop.evaluate(async () => {
+      const response = await fetch("/favicon.ico");
+      return { ok: response.ok, type: response.headers.get("content-type"), bytes: (await response.arrayBuffer()).byteLength };
+    });
+    expect(favicon.ok).toBe(true);
+    expect(favicon.type).toContain("image/x-icon");
+    expect(favicon.bytes).toBeGreaterThan(1000);
     await expect(desktop.locator(".timeline-panel")).toBeVisible();
     await expect(desktop.locator("aside[aria-label=\"主导航\"]")).toHaveCount(1);
     await expect(desktop.locator("aside[aria-label=\"VISTA 检查器\"]")).toHaveCount(1);
@@ -346,6 +356,9 @@ test("静谧任务台多视口 UI smoke 与在线任务创建", async () => {
     pageErrors.push(...observePage(mobile));
     await mobile.goto(appUrl, { waitUntil: "networkidle", timeout: 20_000 });
     await expect(mobile.locator(".timeline-panel")).toBeVisible();
+    const mobileBrand = mobile.locator(".mobile-title img");
+    await expect(mobileBrand).toBeVisible();
+    await expect.poll(() => mobileBrand.evaluate((image) => image.complete && image.naturalWidth >= 64)).toBe(true);
     await assertNoOverflow(mobile, "390px");
     const mobileGrid = await mobile.locator(".main-grid").evaluate((element) => getComputedStyle(element).gridTemplateColumns);
     expect(mobileGrid.split(" ")).toHaveLength(1);

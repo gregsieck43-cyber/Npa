@@ -15,20 +15,31 @@ async function makeRelease(name) {
     "ClaudeWorkbench/LICENSE",
     "ClaudeWorkbench/server.js",
     "ClaudeWorkbench/code-cli.js",
-    "ClaudeWorkbench/frontend/dist/index.html"
+    "ClaudeWorkbench/frontend/dist/index.html",
+    "ClaudeWorkbench/frontend/dist/favicon.ico",
+    "ClaudeWorkbench/frontend/dist/npa-mark.png"
   ];
   for (const relative of required) {
     const target = path.join(root, ...relative.split("/"));
     await mkdir(path.dirname(target), { recursive: true });
-    await writeFile(target, relative.endsWith(".zip") ? minimalZip([
+    const content = relative.endsWith(".html")
+      ? '<title>NPA · 本地智能工作台</title><link rel="icon" href="/favicon.ico"><link rel="apple-touch-icon" href="/npa-mark.png">'
+      : relative.endsWith(".ico")
+        ? Buffer.from([0x00, 0x00, 0x01, 0x00, 0x00, 0x00])
+        : relative.endsWith(".png")
+          ? Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0x00])
+          : relative.endsWith(".zip") ? minimalZip([
       "ClaudeWorkbench.exe",
       "ClaudeWorkbench/node.exe",
       "ClaudeWorkbench/node-LICENSE.txt",
       "ClaudeWorkbench/LICENSE",
       "ClaudeWorkbench/server.js",
       "ClaudeWorkbench/code-cli.js",
-      "ClaudeWorkbench/frontend/dist/index.html"
-    ]) : "release-test");
+      "ClaudeWorkbench/frontend/dist/index.html",
+      "ClaudeWorkbench/frontend/dist/favicon.ico",
+      "ClaudeWorkbench/frontend/dist/npa-mark.png"
+    ]) : "release-test";
+    await writeFile(target, content);
     if (relative === "ClaudeWorkbench.exe") await truncate(target, 11 * 1024 * 1024);
   }
   return root;
@@ -42,6 +53,8 @@ test("release gate requires the launcher, runtime, license, backend, CLI and bui
     assert.ok((await collectReleaseGateIssues(root)).some((issue) => issue.includes("LICENSE")));
     await rm(path.join(root, "ClaudeWorkbench", "node.exe"));
     assert.ok((await collectReleaseGateIssues(root)).some((issue) => issue.includes("node.exe")));
+    await writeFile(path.join(root, "ClaudeWorkbench", "frontend", "dist", "npa-mark.png"), "not-a-png");
+    assert.ok((await collectReleaseGateIssues(root)).some((issue) => issue.includes("invalid file signature")));
   } finally {
     await rm(root, { recursive: true, force: true });
   }
@@ -62,6 +75,21 @@ test("release gate rejects credentials, local data, caches and logs", async () =
     assert.ok(issues.some((issue) => issue.includes("data")));
     assert.ok(issues.some((issue) => issue.includes("server.log")));
     assert.ok(issues.some((issue) => issue.includes(".agents")));
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
+test("release gate rejects development metadata and source-only logo input", async () => {
+  const root = await makeRelease("release-development-metadata");
+  try {
+    const githubWorkflow = path.join(root, "ClaudeWorkbench", ".github", "workflows", "ci.yml");
+    await mkdir(path.dirname(githubWorkflow), { recursive: true });
+    await writeFile(githubWorkflow, "name: CI");
+    await writeFile(path.join(root, "ClaudeWorkbench", "LOGO.png"), "source-only");
+    const issues = await collectReleaseGateIssues(root);
+    assert.ok(issues.some((issue) => issue.includes(".github")));
+    assert.ok(issues.some((issue) => issue.toLowerCase().includes("logo.png")));
   } finally {
     await rm(root, { recursive: true, force: true });
   }

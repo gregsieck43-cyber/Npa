@@ -51,7 +51,7 @@ try {
   $chrome = Resolve-Chrome
   if (-not (Test-Workbench)) {
     $node = Resolve-Node -Root $root
-    Write-Host "Starting Local Claude Workbench at $url"
+    Write-Host "Starting NPA local workbench at $url"
     $serverProcess = Start-Process -FilePath $node -ArgumentList "server.js" -WorkingDirectory $root -PassThru -WindowStyle Hidden
 
     $deadline = (Get-Date).AddSeconds(20)
@@ -64,7 +64,7 @@ try {
     }
   }
   else {
-    Write-Host "Local Claude Workbench is already running at $url"
+    Write-Host "NPA local workbench is already running at $url"
   }
 
   Start-Process -FilePath $chrome -ArgumentList "--new-window", $url

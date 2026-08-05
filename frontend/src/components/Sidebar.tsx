@@ -41,8 +41,8 @@ export function Sidebar({ view, open, projects, onViewChange, onProjectSelect, o
     <aside aria-label="主导航" className={`sidebar ${open ? "is-open" : ""}`}>
       <div className="sidebar-brand">
         <button aria-label="打开今天" className="brand-lockup" onClick={() => navigate("today")} type="button">
-          <span className="brand-mark"><Icon name="spark" size={19} /></span>
-          <span><strong>静谧任务台</strong><small>Local workbench</small></span>
+          <span className="brand-mark" data-testid="npa-brand-mark"><img alt="" aria-hidden="true" src="/npa-mark.png" /></span>
+          <span><strong>NPA</strong><small>静谧任务台</small></span>
         </button>
         <button aria-label="关闭导航" className="icon-button mobile-only" onClick={onClose} type="button"><Icon name="close" /></button>
       </div>

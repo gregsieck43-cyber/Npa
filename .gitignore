@@ -19,6 +19,9 @@ dist/
 .playwright-cli/
 public/app/
 
+# Local source artwork; optimized, metadata-stripped variants live in assets/.
+LOGO.png
+
 # Generated reports and logs
 security-report.json
 logs/

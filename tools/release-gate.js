@@ -13,6 +13,7 @@ const forbiddenDirectoryNames = new Set([
   ".agents",
   ".claude",
   ".codex",
+  ".github",
   ".cache",
   ".tmp",
   ".tools",
@@ -39,7 +40,8 @@ const forbiddenFileNames = new Set([
   ".env.local",
   ".env.production",
   ".env.development",
-  ".npmrc"
+  ".npmrc",
+  "logo.png"
 ]);
 
 function normalized(value) {
@@ -108,11 +110,32 @@ export async function collectReleaseGateIssues(targetDistDir = distDir) {
     "ClaudeWorkbench/LICENSE",
     "ClaudeWorkbench/server.js",
     "ClaudeWorkbench/code-cli.js",
-    "ClaudeWorkbench/frontend/dist/index.html"
+    "ClaudeWorkbench/frontend/dist/index.html",
+    "ClaudeWorkbench/frontend/dist/favicon.ico",
+    "ClaudeWorkbench/frontend/dist/npa-mark.png"
   ];
   if (!existsSync(targetDistDir)) return [`Release directory is missing: ${targetDistDir}`];
   for (const relative of requiredFiles) {
     if (!existsSync(path.join(targetDistDir, ...relative.split("/")))) issues.push(`Required release artifact is missing: ${relative}`);
+  }
+  const frontendIndexPath = path.join(targetDistDir, "ClaudeWorkbench", "frontend", "dist", "index.html");
+  if (existsSync(frontendIndexPath)) {
+    const html = await fs.readFile(frontendIndexPath, "utf8");
+    if (!html.includes("NPA · 本地智能工作台") || !html.includes("/favicon.ico") || !html.includes("/npa-mark.png")) {
+      issues.push("Packaged frontend index is missing the NPA title or brand asset references");
+    }
+  }
+  const brandedAssets = [
+    { relative: "ClaudeWorkbench/frontend/dist/favicon.ico", signature: Buffer.from([0x00, 0x00, 0x01, 0x00]) },
+    { relative: "ClaudeWorkbench/frontend/dist/npa-mark.png", signature: Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]) }
+  ];
+  for (const asset of brandedAssets) {
+    const assetPath = path.join(targetDistDir, ...asset.relative.split("/"));
+    if (!existsSync(assetPath)) continue;
+    const bytes = await fs.readFile(assetPath);
+    if (bytes.length < asset.signature.length || !bytes.subarray(0, asset.signature.length).equals(asset.signature)) {
+      issues.push(`Packaged brand asset has an invalid file signature: ${asset.relative}`);
+    }
   }
   const launcherPath = path.join(targetDistDir, "ClaudeWorkbench.exe");
   if (existsSync(launcherPath) && (await fs.stat(launcherPath)).size < 10 * 1024 * 1024) {
@@ -135,7 +158,9 @@ export async function collectReleaseGateIssues(targetDistDir = distDir) {
       "ClaudeWorkbench/LICENSE",
       "ClaudeWorkbench/server.js",
       "ClaudeWorkbench/code-cli.js",
-      "ClaudeWorkbench/frontend/dist/index.html"
+      "ClaudeWorkbench/frontend/dist/index.html",
+      "ClaudeWorkbench/frontend/dist/favicon.ico",
+      "ClaudeWorkbench/frontend/dist/npa-mark.png"
     ];
     for (const entry of requiredZipEntries) {
       if (!normalizedEntries.has(entry)) issues.push(`Packaged zip is missing required artifact: ${entry}`);

@@ -108,6 +108,7 @@ $excludeDirs = @(
   ".agents",
   ".claude",
   ".codex",
+  ".github",
   ".public-mirror",
   ".worktrees",
   ".vscode",
@@ -150,7 +151,8 @@ $excludeFiles = @(
   ".env",
   ".env.local",
   ".env.production",
-  ".env.development"
+  ".env.development",
+  "LOGO.png"
 )
 
 Get-ChildItem -LiteralPath $root -Force | ForEach-Object {

@@ -300,7 +300,7 @@ function commandRequests(parsed, baseUrl, token) {
 
 function printHelp() {
   process.stdout.write([
-    "Claude Workbench CLI",
+    "NPA CLI · 本地智能工作台",
     "",
     "Usage:",
     "  node code-cli.js --self-test",

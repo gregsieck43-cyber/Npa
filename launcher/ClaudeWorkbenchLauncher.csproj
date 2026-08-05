@@ -7,6 +7,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <AssemblyName>ClaudeWorkbench</AssemblyName>
     <RootNamespace>ClaudeWorkbenchLauncher</RootNamespace>
+    <ApplicationIcon>..\assets\npa.ico</ApplicationIcon>
     <RuntimeIdentifier>win-x64</RuntimeIdentifier>
     <SelfContained>true</SelfContained>
     <PublishSingleFile>true</PublishSingleFile>
@@ -15,17 +16,16 @@
     <PublishTrimmed>false</PublishTrimmed>
   </PropertyGroup>
   <ItemGroup>
-    <!-- Use the repository-local WebView2 cache; no global NuGet install is
-         required for a launcher build on an offline workstation. -->
+    <PackageReference Include="Microsoft.Web.WebView2" Version="1.0.3967.48" GeneratePathProperty="true" ExcludeAssets="all" />
     <Reference Include="Microsoft.Web.WebView2.Core">
-      <HintPath>..\.packages\Microsoft.Web.WebView2.1.0.3967.48\lib\net462\Microsoft.Web.WebView2.Core.dll</HintPath>
+      <HintPath>$(PkgMicrosoft_Web_WebView2)\lib\net462\Microsoft.Web.WebView2.Core.dll</HintPath>
       <Private>true</Private>
     </Reference>
     <Reference Include="Microsoft.Web.WebView2.WinForms">
-      <HintPath>..\.packages\Microsoft.Web.WebView2.1.0.3967.48\lib\net462\Microsoft.Web.WebView2.WinForms.dll</HintPath>
+      <HintPath>$(PkgMicrosoft_Web_WebView2)\lib\net462\Microsoft.Web.WebView2.WinForms.dll</HintPath>
       <Private>true</Private>
     </Reference>
-    <Content Include="..\.packages\Microsoft.Web.WebView2.1.0.3967.48\runtimes\win-x64\native\WebView2Loader.dll">
+    <Content Include="$(PkgMicrosoft_Web_WebView2)\runtimes\win-x64\native\WebView2Loader.dll">
       <Link>WebView2Loader.dll</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
