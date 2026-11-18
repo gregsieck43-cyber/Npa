@@ -1,0 +1,163 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import path from 'node:path';
+import { createHash } from 'node:crypto';
+import { build } from 'esbuild';
+import { _electron } from 'playwright';
+const root = path.resolve(import.meta.dirname, '../../../..');
+const label = process.argv[2] ?? new Date().toISOString().replaceAll(':', '-');
+assert.match(label, /^[\w.-]+$/);
+const work = path.join(root, '.tmp/continuation-20261117-u23', label);
+const evidence = path.join(root, 'evidence/continuation-20261117/u23', label);
+assert.equal(fs.existsSync(evidence), false, 'Keep earlier test evidence');
+fs.mkdirSync(work, { recursive: true }); fs.mkdirSync(evidence, { recursive: true });
+for (const name of ['TEMP', 'TMP', 'HOME', 'USERPROFILE', 'APPDATA', 'LOCALAPPDATA']) process.env[name] = work;
+const sha = file => createHash('sha256').update(fs.readFileSync(file)).digest('hex');
+const inputs = new Map(), checks = [], errors = []; let app, stable = false;
+try {
+  await build({ absWorkingDir: root, entryPoints: [path.join(import.meta.dirname, 'entry.tsx')], outdir: work, entryNames: 'bundle', bundle: true, platform: 'browser', format: 'iife', jsx: 'automatic', define: { __NPN_GATEWAY__: '"bridge"', 'process.env.NODE_ENV': '"production"' }, plugins: [{ name: 'input-fingerprints', setup(b) { b.onLoad({ filter: /\.(tsx?|css)$/ }, args => { inputs.set(args.path, sha(args.path)); return undefined; }); } }] });
+  fs.writeFileSync(path.join(work, 'index.html'), '<!doctype html><html data-theme="light" data-accent="ember" data-motion="full"><meta charset="utf-8"><link rel="stylesheet" href="bundle.css"><style>#root{height:650px;width:900px}.session{height:100%}#extra>.tool{margin:30px}#extra>.sidebar{height:650px;width:272px}#extra>.ptab--chat{height:650px;width:420px}</style><div id="root"></div><script src="bundle.js"></script></html>');
+  const env = { ...process.env, NPN_LAYOUT_USER: path.join(work, 'profile'), NPN_LAYOUT_PAGE: path.join(work, 'index.html') }; delete env.ELECTRON_RUN_AS_NODE; delete env.NODE_OPTIONS;
+  app = await _electron.launch({ executablePath: path.join(root, 'node_modules/electron/dist/electron.exe'), args: [path.join(root, 'src/frontend/tests/narrow-layout-dom/app.cjs')], cwd: work, env });
+  await app.evaluate(({ BrowserWindow }) => { const win = BrowserWindow.getAllWindows()[0]; win.show(); win.focus(); });
+  const page = await app.firstWindow(); page.setDefaultTimeout(5000); page.on('pageerror', error => errors.push(String(error)));
+  await page.waitForFunction(() => Boolean(window.__interaction));
+  const check = async (name, fn) => { try { await fn(); checks.push({ name, passed: true }); console.log('PASS ' + name); } catch (error) { checks.push({ name, passed: false, error: String(error.stack) }); console.log('FAIL ' + name + ': ' + error.message); } };
+  const frame = () => page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+  const setup = async () => { await page.evaluate(async () => { window.__interaction.session(); await window.__window.setup('session'); window.__interaction.deferSend(); }); await frame(); };
+  await check('away from bottom is independently actionable; streaming stays in current container and history is stable', async () => {
+    await setup();
+    await page.locator('.thread').evaluate(el => { el.scrollTop = 80; el.dispatchEvent(new Event('scroll')); });
+    await page.getByRole('button', { name: '回到底部', exact: true }).waitFor();
+    assert.equal(await page.getByRole('button', { name: '有新内容', exact: true }).count(), 0);
+    const top = await page.locator('.thread').evaluate(el => el.scrollTop);
+    await page.evaluate(() => window.__window.emit('a', 241, 'streaming', '新增流式内容')); await frame();
+    assert.equal(await page.locator('.thread').evaluate(el => el.scrollTop), top);
+    await page.getByRole('button', { name: '有新内容', exact: true }).waitFor();
+    await page.getByRole('button', { name: '查看更早消息', exact: true }).click(); await page.getByText('正在查看历史', { exact: true }).waitFor();
+    const before = await page.evaluate(() => window.__window.state().ids);
+    await page.evaluate(() => window.__window.burst(242, 1442)); await frame();
+    assert.deepEqual(await page.evaluate(() => window.__window.state().ids), before);
+    assert.equal(await page.locator('.thread').evaluate(el => el.scrollTop), 0);
+    await page.getByRole('button', { name: '有新内容 · 返回最新', exact: true }).click(); await frame();
+    assert.ok(await page.locator('.msg').count() <= 200);
+    assert.equal(await page.evaluate(() => window.__window.state().history), false);
+    assert.equal(await page.evaluate(() => document.scrollingElement.scrollTop), 0);
+  });
+  await check('synchronous repeated send issues one request; busy feedback and later draft survive failed acknowledgement', async () => {
+    await setup(); await page.locator('.composer__input').fill('发送中的正文');
+    await page.locator('.send-btn').evaluate(el => { el.click(); el.click(); });
+    await page.getByRole('button', { name: '正在发送', exact: true }).waitFor();
+    assert.equal(await page.getByRole('button', { name: '正在发送', exact: true }).getAttribute('aria-busy'), 'true');
+    assert.equal(await page.evaluate(() => window.__interaction.state().sends), 1);
+    await page.locator('.composer__input').fill('后来输入的新草稿');
+    await page.evaluate(() => window.__interaction.finishSend(false));
+    await page.getByRole('button', { name: '正在发送', exact: true }).waitFor({ state: 'detached' });
+    assert.equal(await page.locator('.composer__input').inputValue(), '后来输入的新草稿');
+  });
+  await check('unchanged failed draft restores; edit then erase does not resurrect earlier draft', async () => {
+    await setup(); await page.locator('.composer__input').fill('恢复这条正文'); await page.locator('.send-btn').click();
+    await page.evaluate(() => window.__interaction.finishSend(false)); await frame();
+    assert.equal(await page.locator('.composer__input').inputValue(), '恢复这条正文');
+    await page.locator('.send-btn').click(); await page.locator('.composer__input').fill('新内容'); await page.locator('.composer__input').fill('');
+    await page.evaluate(() => window.__interaction.finishSend(false)); await frame();
+    assert.equal(await page.locator('.composer__input').inputValue(), '');
+  });
+  await check('message copy is exact and success/failure feedback follows clipboard result', async () => {
+    await setup(); const button = page.locator('.msg').last().getByRole('button', { name: '复制', exact: true });
+    await button.click(); await page.locator('.msg').last().locator('[data-copy-state="success"]').waitFor();
+    assert.equal(await page.evaluate(() => window.__interaction.state().copied), '完整消息 240');
+    await setup(); await page.evaluate(() => window.__interaction.clipboard(true));
+    await page.locator('.msg').last().getByRole('button', { name: '复制', exact: true }).click(); await page.locator('.msg').last().locator('[data-copy-state="error"]').waitFor();
+    await page.evaluate(() => window.__interaction.clipboard(false));
+  });
+  await check('successful acknowledgement removes only attachments actually sent and preserves later draft/files', async () => {
+    await setup();
+    const pick = async () => { await page.getByRole('button', { name: '添加附件', exact: true }).click(); await page.getByRole('menuitem', { name: '添加文件', exact: true }).click(); };
+    await pick(); await page.locator('.composer__attachments').getByText('file-1.txt').waitFor();
+    await page.locator('.composer__input').fill('附件请求'); await page.locator('.send-btn').click();
+    await pick(); await page.locator('.composer__attachments').getByText('file-2.txt').waitFor(); await page.locator('.composer__input').fill('下一条草稿');
+    await page.evaluate(() => window.__interaction.finishSend(true)); await frame();
+    assert.equal(await page.locator('.composer__input').inputValue(), '下一条草稿');
+    assert.equal(await page.locator('.composer__attachments').getByText('file-1.txt').count(), 0);
+    assert.equal(await page.locator('.composer__attachments').getByText('file-2.txt').count(), 1);
+  });
+  await check('failed approval remains actionable; success waits for backend event before inert exit', async () => {
+    await page.evaluate(() => window.__interaction.show('approval'));
+    await page.getByRole('button', { name: '批准一次', exact: true }).click();
+    assert.equal(await page.getByRole('group', { name: '需要批准', exact: true }).getAttribute('aria-busy'), 'true');
+    await page.evaluate(() => window.__interaction.approval(false)); await page.getByRole('button', { name: '批准一次', exact: true }).waitFor();
+    await page.getByRole('button', { name: '批准一次', exact: true }).click(); await page.evaluate(() => window.__interaction.approval(true)); await frame();
+    assert.equal(await page.getByRole('group', { name: '需要批准', exact: true }).count(), 1);
+    await page.evaluate(() => window.__interaction.approvalEvent()); await page.locator('.approval').waitFor({ state: 'detached' });
+  });
+  await check('side chat scroll stays local and historical page is not replaced by live polling', async () => {
+    await page.evaluate(() => window.__interaction.show('sidechat')); await page.locator('.sidechat__item').first().waitFor(); await frame();
+    await page.locator('.sidechat__list').evaluate(el => { el.scrollTop = 100; el.dispatchEvent(new Event('scroll')); });
+    await page.getByRole('button', { name: '回到底部', exact: true }).waitFor();
+    const top = await page.locator('.sidechat__list').evaluate(el => el.scrollTop);
+    await page.evaluate(() => window.__interaction.sideAppend()); await frame();
+    assert.equal(await page.locator('.sidechat__list').evaluate(el => el.scrollTop), top);
+    await page.getByRole('button', { name: '有新内容 · 回到底部', exact: true }).waitFor();
+    await page.getByRole('button', { name: '更早记录', exact: true }).click(); await page.getByRole('button', { name: '回到最新', exact: true }).waitFor();
+    await page.evaluate(() => window.__interaction.sidePending()); await frame();
+    const before = await page.evaluate(() => window.__interaction.state().sideReads);
+    await page.waitForTimeout(2100); // Cross the real two-second polling period: no latest fetch may replace history.
+    assert.equal(await page.evaluate(() => window.__interaction.state().sideReads), before);
+    assert.ok(await page.locator('.sidechat__item').count() <= 80);
+    assert.equal(await page.locator('.sidechat__list').evaluate(el => el.scrollTop), 0);
+    assert.equal(await page.evaluate(() => document.scrollingElement.scrollTop), 0);
+  });
+  await check('tool and sidebar collapse unmount expensive content and survive immediate reversal', async () => {
+    await page.evaluate(() => window.__interaction.show('tool'));
+    const head = page.locator('.tool__head'); await head.click(); await page.getByText('完整工具结果', { exact: true }).waitFor();
+    await head.evaluate(el => { el.click(); queueMicrotask(() => el.click()); }); await frame();
+    assert.equal(await head.getAttribute('aria-expanded'), 'true');
+    await head.click(); await page.locator('.tool__body').waitFor({ state: 'detached' });
+    await page.evaluate(() => window.__interaction.show('sidebar')); const group = page.locator('.side-group__head').first();
+    await group.click(); await page.locator('.side-group').first().locator('.side-group__body').waitFor({ state: 'detached' });
+    await group.click(); await page.locator('.side-group').first().locator('.side-group__body').waitFor();
+  });
+  await check('side panel keeps horizontal tab reveal local, bounds narrow width, exits inert and restores', async () => {
+    await page.evaluate(() => window.__interaction.show('panel')); await page.locator('.sidepanel').waitFor();
+    await page.evaluate(() => window.__interaction.activateTab()); await frame();
+    assert.ok(await page.locator('.sidepanel__scroll').evaluate(el => el.scrollLeft) > 0);
+    assert.equal(await page.evaluate(() => document.scrollingElement.scrollTop), 0);
+    await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0].setSize(390, 700)); await frame();
+    const bounds = await page.locator('.sidepanel').boundingBox(); assert.ok(bounds.x >= 0 && bounds.x + bounds.width <= 390);
+    await page.getByRole('button', { name: '最大化面板', exact: true }).click(); await frame();
+    const max = await page.locator('.sidepanel').boundingBox(); assert.ok(max.x >= 0 && max.width <= 390);
+    await page.screenshot({ path: path.join(evidence, 'panel-narrow.png') });
+    await page.getByRole('button', { name: '还原面板', exact: true }).click();
+    const exit = await page.evaluate(async () => { window.__interaction.panel(false); await new Promise(resolve => requestAnimationFrame(resolve)); const panel = document.querySelector('.sidepanel'); return { exists: !!panel, inert: panel?.hasAttribute('inert'), hidden: panel?.getAttribute('aria-hidden') }; });
+    assert.ok(exit.exists && exit.inert && exit.hidden === 'true');
+    await page.locator('.sidepanel').waitFor({ state: 'detached' });
+    await page.evaluate(() => window.__interaction.panel(true)); await page.locator('.sidepanel').waitFor();
+    await page.evaluate(() => window.__interaction.reduced(true)); await frame();
+    await page.evaluate(() => window.__interaction.panel(false)); await frame(); assert.equal(await page.locator('.sidepanel').count(), 0);
+  });
+  await check('pause announces the in-flight request, retains keyboard focus, rejects duplicate activations and restores the control after failure', async () => {
+    await setup(); await page.evaluate(() => window.__interaction.deferPause());
+    const pause = page.getByRole('button', { name: '暂停', exact: true });
+    await pause.focus(); await page.keyboard.press('Space');
+    const pending = page.getByRole('button', { name: '正在暂停', exact: true });
+    await pending.waitFor(); assert.equal(await pending.getAttribute('aria-busy'), 'true'); assert.equal(await pending.getAttribute('aria-disabled'), 'true');
+    assert.equal(await pending.evaluate(el => el === document.activeElement), true);
+    await page.locator('.taskboard [role="status"]').getByText('正在暂停…', { exact: true }).waitFor();
+    assert.equal(await page.getByRole('button', { name: '继续', exact: true }).count(), 0);
+    await pending.evaluate(el => { el.click(); el.click(); });
+    assert.equal(await page.evaluate(() => window.__interaction.pauseRequests()), 1);
+    await page.evaluate(() => window.__interaction.finishPause(false)); await pause.waitFor();
+    await pause.evaluate(el => { el.click(); el.click(); }); await pending.waitFor();
+    assert.equal(await page.evaluate(() => window.__interaction.pauseRequests()), 2);
+    await page.evaluate(() => window.__interaction.finishPause(true));
+    await page.getByRole('button', { name: '继续', exact: true }).waitFor();
+  });
+  for (const [file, hash] of inputs) assert.equal(sha(file), hash, 'Input changed: ' + file); stable = true;
+} catch (error) { checks.push({ name: 'harness', passed: false, error: String(error.stack) }); }
+finally {
+  if (app) await app.close();
+  const passed = checks.length === 10 && checks.every(check => check.passed) && !errors.length && stable;
+  fs.writeFileSync(path.join(evidence, 'result.json'), JSON.stringify({ passed, checks, errors, stable, inputs: Object.fromEntries(inputs), work }, null, 2));
+  console.log(JSON.stringify({ passed, checks: checks.length, failures: checks.filter(check => !check.passed).length, errors, evidence, work })); process.exitCode = passed ? 0 : 1;
+}

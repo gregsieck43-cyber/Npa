@@ -1,0 +1,32 @@
+import assert from 'node:assert/strict';
+import { mkdirSync, mkdtempSync, rmSync } from 'node:fs';
+import path from 'node:path';
+import test from 'node:test';
+import { Kernel } from '../src/kernel/index.js';
+import { assertProjectFixtureRoot } from './project-boundary.js';
+
+test('invalidated approval can wait for new input without executing or completing the task', t => {
+  const base = path.resolve(process.env.TEMP ?? '.tmp');
+  assertProjectFixtureRoot(base); mkdirSync(base, { recursive: true });
+  const directory = mkdtempSync(path.join(base, 'approval-review-'));
+  const kernel = new Kernel(directory);
+  t.after(() => { kernel.close(); assert.equal(path.dirname(directory), base); rmSync(directory, { recursive: true }); });
+  const taskId = kernel.command({ commandId: 'create', type: 'create_task', parameters: { objective: 'Review a changed source before writing' } }).taskId!;
+  const run = kernel.createRun(taskId);
+  kernel.transition(taskId, 'running');
+  const intent = kernel.prepareIntent(taskId, run.id, { id: 'write', name: 'write_file', arguments: { path: 'review.txt', content: 'proposed' } });
+  kernel.approve(intent.id);
+  kernel.transition(taskId, 'waiting_approval');
+  kernel.deny(intent.id, 'Source changed after approval');
+  kernel.transition(taskId, 'waiting_input', { waitingReason: 'Review the current source and prepare a new proposal.' });
+  assert.equal(kernel.getTask(taskId)!.status, 'waiting_input');
+  assert.match(kernel.getTask(taskId)!.waitingReason!, /current source/);
+  assert.equal(kernel.getIntent(intent.id)!.state, 'denied');
+  assert.equal(kernel.getBudgets(taskId).toolCalls, 0);
+  assert.equal(kernel.eventCount(taskId, 'intent.sent'), 0);
+  assert.throws(() => kernel.dispatch(intent.id));
+  assert.throws(() => kernel.transition(taskId, 'completed'));
+  kernel.command({ commandId: 'reviewed', taskId, type: 'send_message', parameters: { content: 'I reviewed the source; prepare a fresh proposal.' } });
+  assert.equal(kernel.getTask(taskId)!.status, 'queued');
+  assert.equal(kernel.getIntent(intent.id)!.state, 'denied');
+});

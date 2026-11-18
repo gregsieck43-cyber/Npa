@@ -1,0 +1,25 @@
+{
+  "name": "NPN Dark", "type": "dark",
+  "colors": {
+    "focusBorder": "#d77757", "foreground": "#ded9ce", "descriptionForeground": "#a19a8b",
+    "editor.background": "#1b1c1e", "editor.foreground": "#ddd7ca", "editorLineNumber.foreground": "#6f6b63", "editorLineNumber.activeForeground": "#d77757",
+    "editor.selectionBackground": "#4a3830", "editor.lineHighlightBackground": "#242527", "editorCursor.foreground": "#d77757",
+    "sideBar.background": "#202123", "sideBar.foreground": "#c2bbaa", "sideBar.border": "#333436", "sideBarSectionHeader.background": "#292a2c",
+    "activityBar.background": "#191a1c", "activityBar.foreground": "#d77757", "activityBar.inactiveForeground": "#817a6e",
+    "titleBar.activeBackground": "#252629", "titleBar.activeForeground": "#d1c6b0", "titleBar.inactiveBackground": "#202123", "titleBar.border": "#333436",
+    "statusBar.background": "#252629", "statusBar.foreground": "#c2b69d", "statusBar.border": "#333436", "statusBar.noFolderBackground": "#252629",
+    "tab.activeBackground": "#1b1c1e", "tab.inactiveBackground": "#252629", "tab.activeForeground": "#ddd7ca", "tab.activeBorderTop": "#d77757", "tab.border": "#333436",
+    "editorGroupHeader.tabsBackground": "#252629", "editorGroup.border": "#333436", "panel.background": "#1d1e20", "panel.border": "#333436",
+    "button.background": "#c8694a", "button.foreground": "#fff8eb", "button.hoverBackground": "#d77757", "input.background": "#28292b", "input.foreground": "#ddd7ca", "input.border": "#49443b",
+    "list.activeSelectionBackground": "#3f3430", "list.activeSelectionForeground": "#f0e5d1", "list.hoverBackground": "#30302d",
+    "terminal.background": "#1d1e20", "terminal.foreground": "#ddd7ca", "badge.background": "#c8694a", "badge.foreground": "#fff8eb"
+  },
+  "tokenColors": [
+    { "scope": ["comment"], "settings": { "foreground": "#8b877e", "fontStyle": "italic" } },
+    { "scope": ["keyword", "storage"], "settings": { "foreground": "#c39784" } },
+    { "scope": ["string"], "settings": { "foreground": "#9db697" } },
+    { "scope": ["constant.numeric"], "settings": { "foreground": "#d1b079" } },
+    { "scope": ["entity.name.function"], "settings": { "foreground": "#a3b8cf" } },
+    { "scope": ["entity.name.type"], "settings": { "foreground": "#baa6cc" } }
+  ]
+}

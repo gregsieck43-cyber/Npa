@@ -1,21 +1,35 @@
 {
   "compilerOptions": {
-    "target": "ES2022",
-    "useDefineForClassFields": true,
-    "lib": ["ES2022", "DOM", "DOM.Iterable"],
-    "allowJs": false,
-    "skipLibCheck": true,
-    "esModuleInterop": true,
-    "allowSyntheticDefaultImports": true,
+    "target": "ES2023",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
     "strict": true,
-    "forceConsistentCasingInFileNames": true,
-    "module": "ESNext",
-    "moduleResolution": "Bundler",
+    "skipLibCheck": true,
+    "outDir": "build",
+    "rootDir": ".",
+    "lib": [
+      "ES2023",
+      "DOM",
+      "DOM.Iterable"
+    ],
+    "types": [
+      "node"
+    ],
     "resolveJsonModule": true,
-    "isolatedModules": true,
-    "noEmit": true,
-    "jsx": "react-jsx",
-    "types": ["vite/client"]
+    "noFallthroughCasesInSwitch": true,
+    "jsx": "react-jsx"
   },
-  "include": ["frontend/src", "vite.config.ts"]
+  "include": [
+    "src/**/*.ts",
+    "src/**/*.tsx",
+    "ide/extension/src/**/*.ts",
+    "ide/extension/ui/**/*.ts",
+    "tests/**/*.ts"
+  ],
+  "exclude": [
+    "src/frontend",
+    "node_modules",
+    "build",
+    "release"
+  ]
 }

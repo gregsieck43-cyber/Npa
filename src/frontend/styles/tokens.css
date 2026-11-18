@@ -1,0 +1,164 @@
+/* ============ 设计令牌 ============
+   配色参照 Claude Code（theme reference）：
+   单一低饱和强调色（陶土橙 rgb(215,119,87)）+ 中性暖灰，状态色低饱和；不使用多彩渐变。
+   暖白（默认）与深墨两套完整主题；强调色由 data-accent 切换，全部为同色系低饱和色。
+   组件只使用这里的变量，不写死颜色。 */
+
+:root {
+  --font-sans: "Inter", "Segoe UI Variable Text", "Segoe UI", "PingFang SC", "Microsoft YaHei UI", "Noto Sans SC", system-ui, sans-serif;
+  --font-display: "Segoe UI Variable Display", "Inter", "Segoe UI", "PingFang SC", "Microsoft YaHei UI", system-ui, sans-serif;
+  --font-serif: "Source Han Serif SC", "Noto Serif SC", "Songti SC", Georgia, "Times New Roman", serif;
+  --font-mono: "Cascadia Code", "JetBrains Mono", "SF Mono", Consolas, "Microsoft YaHei UI", monospace;
+  --font-scale: 1;
+
+  --fs-11: calc(11px * var(--font-scale));
+  --fs-12: calc(12px * var(--font-scale));
+  --fs-13: calc(13px * var(--font-scale));
+  --fs-14: calc(14px * var(--font-scale));
+  --fs-15: calc(15px * var(--font-scale));
+  --fs-17: calc(17px * var(--font-scale));
+  --fs-20: calc(20px * var(--font-scale));
+  --fs-28: calc(28px * var(--font-scale));
+  --fs-40: calc(40px * var(--font-scale));
+
+  --r-xs: 6px;
+  --r-sm: 8px;
+  --r-md: 12px;
+  --r-lg: 16px;
+  --r-xl: 22px;
+  --r-pill: 999px;
+
+  --ease-out: cubic-bezier(.16, 1, .3, 1);
+  --ease-in-out: cubic-bezier(.65, 0, .35, 1);
+  --ease-spring: cubic-bezier(.34, 1.56, .64, 1);
+  --t-fast: 60ms;
+  --t-base: 80ms;
+  --t-slow: 100ms;
+  --t-xslow: 180ms;
+
+  --row-h: 32px;
+  --gap: 12px;
+  --topbar-h: 52px;
+  --statusbar-h: 28px;
+}
+
+:root[data-density="compact"] {
+  --row-h: 28px;
+  --gap: 9px;
+  --topbar-h: 46px;
+}
+
+/* ---------- 暖白 ---------- */
+:root[data-theme="light"] {
+  color-scheme: light;
+  --bg: #f5f4ef;
+  --bg-deep: #ebe9e1;
+  --surface: #fbfaf7;
+  --surface-2: #f3f1eb;
+  --surface-3: #e9e6dd;
+  --glass: rgba(251, 250, 247, .82);
+  --glass-strong: rgba(251, 250, 247, .95);
+  --hover: rgba(40, 36, 28, .05);
+  --active: rgba(40, 36, 28, .085);
+  --border: rgba(40, 36, 28, .1);
+  --border-strong: rgba(40, 36, 28, .17);
+  --text: #1f1e1b;
+  --text-2: #57544d;
+  --text-3: #8e8a80;
+  --text-inverse: #fbfaf7;
+  --ok: rgb(44, 122, 57);
+  --warn: rgb(150, 108, 30);
+  --danger: rgb(171, 43, 63);
+  --info: rgb(87, 105, 247);
+  --ok-soft: rgba(44, 122, 57, .1);
+  --warn-soft: rgba(150, 108, 30, .11);
+  --danger-soft: rgba(171, 43, 63, .09);
+  --info-soft: rgba(87, 105, 247, .09);
+  --code-bg: #f0eee7;
+  --code-text: #33312c;
+  --shadow-sm: 0 1px 2px rgba(30, 26, 18, .05);
+  --shadow-md: 0 4px 14px -6px rgba(30, 26, 18, .12), 0 1px 3px rgba(30, 26, 18, .04);
+  --shadow-lg: 0 18px 48px -18px rgba(30, 26, 18, .22), 0 4px 12px -6px rgba(30, 26, 18, .08);
+  --grain-opacity: .035;
+  --ambient-opacity: .14;
+  --syn-key: #a5523a;
+  --syn-str: #3d7a4a;
+  --syn-num: #7b5aa6;
+  --syn-com: #9b978c;
+  --syn-fn: #3f5fa8;
+}
+
+/* ---------- 深墨 ---------- */
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #1f1e1d;
+  --bg-deep: #191817;
+  --surface: #262624;
+  --surface-2: #2c2b29;
+  --surface-3: #353431;
+  --glass: rgba(38, 38, 36, .86);
+  --glass-strong: rgba(38, 38, 36, .96);
+  --hover: rgba(255, 255, 255, .05);
+  --active: rgba(255, 255, 255, .08);
+  --border: rgba(255, 255, 255, .08);
+  --border-strong: rgba(255, 255, 255, .14);
+  --text: #ecebe6;
+  --text-2: #b4b2aa;
+  --text-3: #87857e;
+  --text-inverse: #1f1e1d;
+  --ok: rgb(78, 186, 101);
+  --warn: rgb(222, 172, 60);
+  --danger: rgb(236, 110, 120);
+  --info: rgb(177, 185, 249);
+  --ok-soft: rgba(78, 186, 101, .12);
+  --warn-soft: rgba(222, 172, 60, .12);
+  --danger-soft: rgba(236, 110, 120, .12);
+  --info-soft: rgba(177, 185, 249, .12);
+  --code-bg: #1b1a19;
+  --code-text: #dddbd3;
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, .3);
+  --shadow-md: 0 6px 18px -8px rgba(0, 0, 0, .5);
+  --shadow-lg: 0 24px 64px -20px rgba(0, 0, 0, .65), 0 0 0 1px rgba(255, 255, 255, .03);
+  --grain-opacity: .04;
+  --ambient-opacity: .1;
+  --syn-key: #e0977b;
+  --syn-str: #9cc79f;
+  --syn-num: #c2a8e0;
+  --syn-com: #75736c;
+  --syn-fn: #a5b4ea;
+}
+
+/* ---------- 强调色（同色系：accent 主色 / accent-2 浅色调 / accent-3 深色调） ---------- */
+:root[data-accent="ember"] { --accent: rgb(215, 119, 87); --accent-2: rgb(232, 150, 120); --accent-3: rgb(184, 92, 62); }
+:root[data-accent="indigo"] { --accent: rgb(96, 110, 196); --accent-2: rgb(128, 140, 214); --accent-3: rgb(74, 86, 166); }
+:root[data-accent="jade"] { --accent: rgb(70, 140, 110); --accent-2: rgb(104, 166, 138); --accent-3: rgb(52, 112, 86); }
+:root[data-accent="violet"] { --accent: rgb(140, 104, 180); --accent-2: rgb(166, 134, 200); --accent-3: rgb(112, 80, 150); }
+:root[data-accent="ocean"] { --accent: rgb(66, 130, 190); --accent-2: rgb(100, 156, 208); --accent-3: rgb(48, 104, 160); }
+:root[data-theme="dark"][data-accent="ember"] { --accent: rgb(215, 119, 87); --accent-2: rgb(235, 159, 127); --accent-3: rgb(190, 100, 70); }
+:root[data-theme="dark"][data-accent="indigo"] { --accent: rgb(140, 152, 230); --accent-2: rgb(177, 185, 249); --accent-3: rgb(110, 122, 205); }
+:root[data-theme="dark"][data-accent="jade"] { --accent: rgb(100, 176, 140); --accent-2: rgb(132, 198, 166); --accent-3: rgb(78, 150, 116); }
+:root[data-theme="dark"][data-accent="violet"] { --accent: rgb(172, 140, 214); --accent-2: rgb(196, 170, 230); --accent-3: rgb(144, 112, 190); }
+:root[data-theme="dark"][data-accent="ocean"] { --accent: rgb(110, 164, 220); --accent-2: rgb(144, 188, 232); --accent-3: rgb(86, 140, 196); }
+
+:root {
+  --accent-soft: color-mix(in oklab, var(--accent) 13%, transparent);
+  --accent-softer: color-mix(in oklab, var(--accent) 7%, transparent);
+  --accent-line: color-mix(in oklab, var(--accent) 36%, transparent);
+  --accent-ink: #fff;
+  /* 只在同一色相内做明度过渡，视觉上接近纯色 */
+  --grad: linear-gradient(180deg, var(--accent-2), var(--accent) 60%);
+  --grad-wide: linear-gradient(90deg, var(--accent), var(--accent-2));
+  --focus-ring: 0 0 0 2px var(--bg), 0 0 0 4px color-mix(in oklab, var(--accent) 55%, transparent);
+}
+
+/* 动效减弱：保留状态变化，去除位移与循环动画 */
+:root[data-motion="reduced"] *,
+:root[data-motion="reduced"] *::before,
+:root[data-motion="reduced"] *::after {
+  animation-duration: 1ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 1ms !important;
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 1ms !important; animation-iteration-count: 1 !important; transition-duration: 1ms !important; }
+}

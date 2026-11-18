@@ -1,6 +1,6 @@
 # Security Policy
 
-NPA is a single-user, local-first application. It can run model-driven file,
+NPN-Gamma Code is a single-user, local-first application. It can run model-driven file,
 terminal, Git, network, connector, and credential-adjacent workflows, so a
 local vulnerability may still create meaningful side effects.
 
@@ -18,8 +18,8 @@ contact channel without attaching sensitive details.
 ## Scope and response
 
 Reports involving path traversal or junction escapes, SSRF and redirects,
-command authorization, secret redaction, CSRF or idempotency, encrypted
-context payloads, crash recovery, or effect replay are especially useful. The
+command authorization, secret redaction, request identity, local
+context storage, crash recovery, or effect replay are especially useful. The
 maintainer will acknowledge a report when practical, reproduce it locally,
 publish a regression test where safe, and document the mitigation.
 

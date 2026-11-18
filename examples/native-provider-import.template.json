@@ -1,0 +1,9 @@
+{
+  "name": "My model",
+  "providerLabel": "My provider",
+  "baseUrl": "https://provider.example.invalid/v1",
+  "model": "REPLACE_WITH_MODEL_ID",
+  "credentialFile": "REPLACE_WITH_ABSOLUTE_PATH_ON_INSTALLATION_VOLUME",
+  "maxRequests": 1,
+  "authorizeDays": 1
+}

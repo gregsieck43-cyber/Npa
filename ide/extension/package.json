@@ -1,0 +1,76 @@
+{
+  "name": "npn-ide",
+  "displayName": "NPN Gamma IDE",
+  "description": "Native professional editor integration with the independent NPN Agent backend.",
+  "version": "0.7.5",
+  "publisher": "npn-gamma",
+  "private": true,
+  "license": "UNLICENSED",
+  "type": "module",
+  "main": "./extension.cjs",
+  "engines": { "vscode": "^1.135.0" },
+  "categories": ["Other"],
+  "activationEvents": ["onStartupFinished"],
+  "extensionKind": ["workspace"],
+  "capabilities": {
+    "untrustedWorkspaces": { "supported": "limited", "description": "Editing and read-only task status work in Restricted Mode; creating Agent tasks requires a trusted workspace." },
+    "virtualWorkspaces": { "supported": false, "description": "This release connects only local Windows file workspaces to the local backend." }
+  },
+  "contributes": {
+    "configuration": {
+      "title": "NPN Gamma",
+      "properties": {
+        "npn.openWorkbenchOnStartup": { "type": "boolean", "default": true, "description": "Open the NPN welcome and Agent workbench beside the native editor." },
+        "npn.dataDirectory": { "type": "string", "default": "", "scope": "machine", "description": "Explicit F: NPN data folder containing backend.json. No API key or token belongs in this setting." }
+      }
+    },
+    "themes": [
+      { "id": "NPN Warm", "label": "NPN Warm", "uiTheme": "vs", "path": "./themes/npn-warm.json" },
+      { "id": "NPN Dark", "label": "NPN Dark", "uiTheme": "vs-dark", "path": "./themes/npn-dark.json" }
+    ],
+    "commands": [
+      { "command": "npn.openAgent", "title": "NPN: 打开 Agent 工作台", "icon": "$(comment-discussion)" },
+      { "command": "npn.openWorkbench", "title": "NPN: 打开 NPN 首页" },
+      { "command": "npn.selectTask", "title": "NPN: 在 Agent 工作台打开任务" },
+      { "command": "npn.addSelection", "title": "NPN: 添加选区到 Agent 上下文", "icon": "$(add)" },
+      { "command": "npn.connect", "title": "NPN: Connect to Agent Backend", "icon": "$(plug)" },
+      { "command": "npn.openProject", "title": "NPN: Open Project", "icon": "$(folder-opened)" },
+      { "command": "npn.authorizeProject", "title": "NPN: Connect Current Project" },
+      { "command": "npn.refresh", "title": "NPN: Refresh Workspace Tasks", "icon": "$(refresh)" },
+      { "command": "npn.createTask", "title": "NPN: Create Work Task", "icon": "$(add)" },
+      { "command": "npn.taskFromSelection", "title": "NPN: Create Task from Selection" },
+      { "command": "npn.openTask", "title": "NPN: Inspect Task" },
+      { "command": "npn.openTrace", "title": "NPN: Open Retained Task Trace" },
+      { "command": "npn.pause", "title": "NPN: Pause Task", "icon": "$(debug-pause)" },
+      { "command": "npn.resume", "title": "NPN: Resume Task", "icon": "$(play)" },
+      { "command": "npn.retry", "title": "NPN: Retry Task", "icon": "$(refresh)" },
+      { "command": "npn.cancel", "title": "NPN: Cancel Task", "icon": "$(stop-circle)" },
+      { "command": "npn.openTerminal", "title": "NPN: Open Native Project Terminal", "icon": "$(terminal)" },
+      { "command": "npn.compareSaved", "title": "NPN: Compare Editor with Saved File" }
+    ],
+    "viewsContainers": {
+      "activitybar": [{ "id": "npn", "title": "NPN Gamma", "icon": "media/agent.svg" }],
+      "secondarySidebar": [{ "id": "npn-agent", "title": "NPN Agent", "icon": "media/agent.svg" }]
+    },
+    "views": {
+      "npn": [{ "id": "npn.tasks", "name": "Workspace Tasks" }],
+      "npn-agent": [{ "id": "npn.agentView", "name": "NPN Agent", "type": "webview", "icon": "media/agent.svg" }]
+    },
+    "viewsWelcome": [{ "view": "npn.tasks", "contents": "Native editing does not require an Agent task.\n[Create Work Task](command:npn.createTask)\n[Connect Backend](command:npn.connect)\n[Open Project Terminal](command:npn.openTerminal)" }],
+    "menus": {
+      "view/title": [
+        { "command": "npn.openAgent", "when": "view == npn.tasks", "group": "navigation" },
+        { "command": "npn.refresh", "when": "view == npn.tasks", "group": "navigation" },
+        { "command": "npn.createTask", "when": "view == npn.tasks", "group": "navigation" }
+      ],
+      "view/item/context": [
+        { "command": "npn.openTrace", "when": "view == npn.tasks && viewItem =~ /^npnTask/", "group": "1_inspect" },
+        { "command": "npn.pause", "when": "view == npn.tasks && viewItem =~ /running|queued|waiting/", "group": "inline" },
+        { "command": "npn.resume", "when": "view == npn.tasks && viewItem == npnTask:paused", "group": "inline" },
+        { "command": "npn.retry", "when": "view == npn.tasks && viewItem == npnTask:failed", "group": "inline" },
+        { "command": "npn.cancel", "when": "view == npn.tasks && viewItem =~ /^npnTask/", "group": "2_control" }
+      ],
+      "editor/context": [{ "command": "npn.addSelection", "when": "editorHasSelection && resourceScheme == file", "group": "npn" }, { "command": "npn.taskFromSelection", "when": "editorHasSelection && resourceScheme == file", "group": "npn" }]
+    }
+  }
+}

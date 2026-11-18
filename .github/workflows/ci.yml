@@ -1,72 +1,21 @@
-name: CI
-
-on:
-  push:
-    branches: [main, "codex/**"]
-  pull_request:
-
+name: Windows source checks
+on: [push, pull_request]
 permissions:
   contents: read
-
 jobs:
-  checks:
-    name: Typecheck and tests
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 24.18.x
-          cache: npm
-      - run: npm ci
-      - run: npm run typecheck
-      - run: npm run test:server
-      - run: npm run test:frontend
-
-  ui:
-    name: Responsive UI smoke
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    needs: checks
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 24.18.x
-          cache: npm
-      - run: npm ci
-      - run: npx playwright install --with-deps chromium
-      - run: npm run test:ui
-
-  desktop:
-    name: Windows launcher build
+  windows:
     runs-on: windows-latest
-    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-dotnet@v4
+      - uses: actions/setup-node@v4
         with:
-          dotnet-version: 10.0.x
-      - name: Publish self-contained launcher
+          node-version: 24.16.0
+          architecture: x64
+      - name: Install and build
         shell: pwsh
-        env:
-          NUGET_PACKAGES: ${{ github.workspace }}\.cache\nuget
-          DOTNET_CLI_USE_MSBUILD_SERVER: "0"
-        run: >-
-          dotnet publish launcher/ClaudeWorkbenchLauncher.csproj
-          -c Release
-          -r win-x64
-          --self-contained true
-          --disable-build-servers
-          -o .tmp/launcher-ci
-          -p:PublishSingleFile=true
-          -p:IncludeNativeLibrariesForSelfExtract=true
-          -p:IncludeAllContentForSelfExtract=true
-          -p:PublishTrimmed=false
-      - name: Verify launcher artifact
-        shell: pwsh
-        run: |
-          $exe = Get-Item .tmp/launcher-ci/ClaudeWorkbench.exe
-          if ($exe.Length -lt 10MB) { throw "Launcher is not self-contained" }
-          Write-Host "WINDOWS_LAUNCHER_OK $($exe.Length)"
+        run: ./scripts/setup.ps1
+      - run: npm.cmd run typecheck
+      - run: npm.cmd run lint
+      - run: npm.cmd run test:frontend
+      - name: Mock, CLI, MCP and provider configuration
+        run: npm.cmd run test:smoke

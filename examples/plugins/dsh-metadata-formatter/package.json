@@ -1,0 +1,15 @@
+{
+  "name": "@npn-fixtures/dsh-metadata-formatter",
+  "version": "1.0.0",
+  "private": true,
+  "engines": { "dsh": "0.2.0-rc.2" },
+  "dsh": { "manifestVersion": 1 },
+  "npn": {
+    "api": "npn-plugin/1",
+    "id": "dsh_formatter",
+    "name": "NPN DSH manifest adapter fixture",
+    "version": "1.0.0",
+    "permissions": ["text.transform"],
+    "operations": [{ "id": "clean", "title": "Normalize and trim", "steps": ["normalize_newlines", "trim"] }]
+  }
+}

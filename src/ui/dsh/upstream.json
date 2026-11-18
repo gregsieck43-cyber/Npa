@@ -1,0 +1,113 @@
+{
+  "commit": "639ed015397290b3745d163aafe02ffee4aa3f84",
+  "license": "MIT",
+  "version": "0.2.0-rc.2",
+  "files": [
+    {
+      "target": "src/ui/dsh/EmptyHero.tsx",
+      "upstreamSha256": "aae49c5f2a5fd6de8c7d86b57f2fc3ccefc8f01fc925181dd8f674eae657af62",
+      "source": "packages/client/ui-conversation/src/client/skeleton/EmptyHero.tsx"
+    },
+    {
+      "target": "src/ui/dsh/scrollbar.css",
+      "upstreamSha256": "673450184fe82a679b5759a7f93ceab17895b9f12e1196f7efb281304afd8398",
+      "source": "packages/client/ui-theme/src/styles/scrollbar.css"
+    },
+    {
+      "target": "src/ui/dsh/AppFrame.tsx",
+      "upstreamSha256": "9354b627962e0a7e8f2f3fa01d3fb5463e8a28e37531d73d426d262bc755edda",
+      "source": "packages/client/ui-layout/src/client/AppFrame.tsx"
+    },
+    {
+      "target": "src/ui/dsh/SidebarRoot.module.css",
+      "upstreamSha256": "798a151927c143ae9b7c2e52090cb7d2a4ed967e5701e7fdd2b4bb4a330d3f82",
+      "source": "packages/client/ui-sidebar/src/client/SidebarRoot.module.css"
+    },
+    {
+      "target": "src/ui/dsh/MessageItem.module.css",
+      "upstreamSha256": "e52ee9df23a65396983f2f22b3186a1e6fd72e4ba4fd0f48d5bee746205870f1",
+      "source": "packages/client/ui-chat/src/client/chat/MessageItem.module.css"
+    },
+    {
+      "target": "src/ui/dsh/InputBar.tsx",
+      "upstreamSha256": "2716aa3582251a5cfbc77268f95c39ebfcf44a4d3c43cd65d0726ddb7a9c7649",
+      "source": "packages/client/ui-conversation/src/client/skeleton/InputBar.tsx"
+    },
+    {
+      "target": "src/ui/dsh/SidebarRoot.tsx",
+      "upstreamSha256": "51d95e300ed74cdfdeb2c7f7daa8b32324af95071787c0e6d3905b450c9e4951",
+      "source": "packages/client/ui-sidebar/src/client/SidebarRoot.tsx"
+    },
+    {
+      "target": "src/ui/dsh/columns.ts",
+      "upstreamSha256": "db5e8fda5eef38ee4760e97ec15b0271f7f20639af5d936bdc78a36dd5a75e88",
+      "source": "packages/client/ui-layout/src/client/columns.ts"
+    },
+    {
+      "target": "src/ui/dsh/base.css",
+      "upstreamSha256": "03704b5ac0e86d9d875c4fa5c985a7dfe5d56e20dc28a8d8221626aaf7aa482a",
+      "source": "packages/client/ui-theme/src/styles/base.css"
+    },
+    {
+      "target": "src/ui/dsh/HeroShell.module.css",
+      "upstreamSha256": "38a98b030dc643553bbbfaffeb8e98ca4668c59e55165da57aca31e89ee92f44",
+      "source": "packages/client/ui-conversation/src/client/skeleton/HeroShell.module.css"
+    },
+    {
+      "target": "src/ui/dsh/MessageIconActions.module.css",
+      "upstreamSha256": "b5e3ced5112bb676345eaa7d1bf7ec291b87f56ffa87579b6ece7b6ca6c72902",
+      "source": "packages/client/ui-chat/src/client/chat/MessageIconActions.module.css"
+    },
+    {
+      "target": "src/ui/dsh/AppFrame.module.css",
+      "upstreamSha256": "24a720b480ae02550584b809b66098b0cf6899cb9be31a13de8c66182f504b7f",
+      "source": "packages/client/ui-layout/src/client/AppFrame.module.css"
+    },
+    {
+      "target": "src/ui/dsh/design-platform.css",
+      "upstreamSha256": "809b20ae477324fdf5181a2d338655a19919cabbf1b0e60adc149908462c5a66",
+      "source": "packages/client/ui-theme/src/styles/design-platform.css"
+    },
+    {
+      "target": "src/ui/dsh/ConversationRoot.module.css",
+      "upstreamSha256": "d9d856868adfdc8a300600e060e6262afa42fc3bfc8019b5a597dec326b0c59c",
+      "source": "packages/client/ui-conversation/src/client/skeleton/ConversationRoot.module.css"
+    },
+    {
+      "target": "src/ui/dsh/InputBar.module.css",
+      "upstreamSha256": "3728d67da4e1d1c2dd102d66f42f0c129a5c1e17e6a1167d738c999d0d87f60b",
+      "source": "packages/client/ui-conversation/src/client/skeleton/InputBar.module.css"
+    },
+    {
+      "target": "src/ui/dsh/focus.css",
+      "upstreamSha256": "f7398e7730415592ab1e81cec36f8c5e23065becd06c050f0129a6fa44d247e8",
+      "source": "packages/client/ui-theme/src/styles/focus.css"
+    },
+    {
+      "source": "packages/client/ui-theme/src/styles/gradient-shadow-text.css",
+      "target": "src/ui/dsh/gradient-shadow-text.css",
+      "upstreamSha256": "a32d784be999def56673b5f86bebd250f401cda1c861adc4c1ea0ebb1ce36ad6"
+    },
+    {
+      "target": "src/ui/dsh/StatsPills.tsx",
+      "upstreamSha256": "7c74b7b3538e297d6f3352508f4d17a424c962dcd1bc61d13f70093e0b02667c",
+      "source": "packages/client/ui-chat/src/client/chat/StatsPills.tsx"
+    },
+    {
+      "target": "src/ui/dsh/StatsPills.module.css",
+      "upstreamSha256": "409248425512a70d9287d0a67d2a045b9cd025e4cefb09c908e97c0ab5edb211",
+      "source": "packages/client/ui-chat/src/client/chat/StatsPills.module.css"
+    },
+    {
+      "target": "src/ui/dsh/ContextMeter.tsx",
+      "upstreamSha256": "84e568164bb26fadc8cae50d82de7dbd4d14be0d957f5ae7fd9c4575a1f1568d",
+      "source": "packages/client/ui-conversation/src/client/skeleton/ContextMeter.tsx"
+    },
+    {
+      "target": "src/ui/dsh/ContextMeter.module.css",
+      "upstreamSha256": "e797489423a959481600296afb54578ce8b9c7b5106be752b0e177628ef98bff",
+      "source": "packages/client/ui-conversation/src/client/skeleton/ContextMeter.module.css"
+    }
+  ],
+  "project": "DeepSeek Harness"
+}

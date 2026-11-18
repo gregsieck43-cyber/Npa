@@ -1,5 +1,5 @@
 name: Bug report
-description: Report a reproducible problem in NPA
+description: Report a reproducible problem in NPN-Gamma Code
 labels: [bug]
 body:
   - type: markdown
@@ -9,7 +9,7 @@ body:
     id: version
     attributes:
       label: Version or commit
-      placeholder: 0.2.0 or c2b4730
+      placeholder: 0.7.5 preview or commit SHA
     validations:
       required: true
   - type: textarea

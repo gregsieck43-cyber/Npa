@@ -1,0 +1,92 @@
+*, *::before, *::after { box-sizing: border-box; }
+html, body, #root { height: 100%; margin: 0; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font: 400 var(--fs-14)/1.55 var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  overflow: hidden;
+  transition: background-color var(--t-slow) var(--ease-out), color var(--t-slow) var(--ease-out);
+}
+button, input, textarea, select { font: inherit; color: inherit; }
+button { cursor: pointer; background: none; border: 0; padding: 0; }
+button:disabled { cursor: not-allowed; }
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; text-underline-offset: 3px; }
+::selection { background: color-mix(in oklab, var(--accent) 28%, transparent); }
+:focus-visible { outline: none; }
+button:focus-visible, a:focus-visible, [role="tab"]:focus-visible, [role="switch"]:focus-visible { box-shadow: var(--focus-ring); }
+.icon { flex: none; display: block; }
+code, pre, kbd, .mono { font-family: var(--font-mono); font-variant-ligatures: contextual; }
+
+/* 滚动条 */
+* { scrollbar-width: thin; scrollbar-color: var(--border-strong) transparent; }
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 10px; border: 3px solid transparent; background-clip: content-box; }
+::-webkit-scrollbar-thumb:hover { background-color: var(--text-3); }
+::-webkit-scrollbar-track { background: transparent; }
+
+/* ---------- 环境光与颗粒 ---------- */
+.ambient { position: fixed; inset: 0; pointer-events: none; z-index: 0; overflow: hidden; }
+.ambient__blob {
+  position: absolute; width: 56vmax; height: 56vmax; border-radius: 50%;
+  filter: blur(90px); opacity: var(--ambient-opacity); mix-blend-mode: normal;
+  will-change: transform;
+}
+.ambient__blob--a { background: radial-gradient(circle at 50% 50%, color-mix(in oklab, var(--accent) 55%, transparent), transparent 62%); top: -22vmax; left: -12vmax; animation: drift-a 38s var(--ease-in-out) infinite alternate; }
+.ambient__blob--b { background: radial-gradient(circle at 50% 50%, color-mix(in oklab, var(--accent-2) 50%, transparent), transparent 62%); bottom: -30vmax; right: -16vmax; animation: drift-b 44s var(--ease-in-out) infinite alternate; }
+.ambient__blob--c { display: none; }
+.ambient__grain {
+  position: absolute; inset: -50%; opacity: var(--grain-opacity);
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='220' height='220'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 1 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+}
+:root[data-ambient="false"] .ambient__blob { display: none; }
+
+@keyframes drift-a { to { transform: translate3d(14vmax, 10vmax, 0) scale(1.15); } }
+@keyframes drift-b { to { transform: translate3d(-12vmax, -8vmax, 0) scale(1.1); } }
+@keyframes drift-c { to { transform: translate3d(-18vmax, 12vmax, 0) scale(.85); } }
+
+/* ---------- 主题切换圆形揭示 ---------- */
+::view-transition-old(root), ::view-transition-new(root) { animation: none; mix-blend-mode: normal; }
+.theme-reveal::view-transition-new(root) { animation: reveal var(--t-xslow) var(--ease-out); }
+@keyframes reveal {
+  from { clip-path: circle(0 at var(--reveal-x, 50%) var(--reveal-y, 50%)); }
+  to { clip-path: circle(150vmax at var(--reveal-x, 50%) var(--reveal-y, 50%)); }
+}
+
+/* ---------- 通用动效 ---------- */
+@keyframes fade-in { from { opacity: 0; } }
+@keyframes rise-in { from { opacity: 0; transform: translateY(8px); } }
+@keyframes pop-in { from { opacity: 0; transform: scale(.96) translateY(4px); } }
+@keyframes slide-in-right { from { opacity: 0; transform: translateX(16px); } }
+@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes pulse-ring { 0% { box-shadow: 0 0 0 0 color-mix(in oklab, currentColor 45%, transparent); } 100% { box-shadow: 0 0 0 7px transparent; } }
+@keyframes shimmer { from { background-position: -200% 0; } to { background-position: 200% 0; } }
+@keyframes caret { 50% { opacity: 0; } }
+@keyframes gradient-pan { to { background-position: 200% 50%; } }
+@keyframes border-spin { to { --angle: 360deg; } }
+@keyframes breathe { 50% { transform: scale(1.08); filter: brightness(1.15); } }
+
+@property --angle { syntax: '<angle>'; initial-value: 0deg; inherits: false; }
+
+.rise-in { animation: rise-in var(--t-slow) var(--ease-out) both; }
+.fade-in { animation: fade-in var(--t-base) var(--ease-out) both; }
+.stagger > * { animation: rise-in var(--t-slow) var(--ease-out) both; }
+/* Content becomes available together; sequential delays made settings and history feel blocked. */
+
+.gradient-text { color: var(--accent); }
+.shimmer-text {
+  background: linear-gradient(90deg, var(--text-3) 0%, var(--text) 40%, var(--text-3) 80%); background-size: 200% 100%;
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+  animation: shimmer 2.2s linear infinite;
+}
+.spin { animation: spin .9s linear infinite; }
+.muted { color: var(--text-3); }
+.dim { color: var(--text-2); }
+.grow { flex: 1; min-width: 0; }
+.row { display: flex; align-items: center; gap: 8px; }
+.col { display: flex; flex-direction: column; gap: 8px; }
+.truncate { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.num { font-variant-numeric: tabular-nums; }

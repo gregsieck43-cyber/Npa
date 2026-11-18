@@ -1,38 +1,44 @@
 {
-  "name": "local-claude-workbench",
-  "version": "0.2.0",
+  "name": "npn-gamma-agent",
+  "version": "0.7.5",
   "private": true,
   "type": "module",
-  "description": "Local-first Chinese AI workbench with durable tasks and recoverable context.",
-  "license": "Apache-2.0",
+  "description": "Persistent local agent desktop, CLI and MCP",
   "engines": {
-    "node": ">=24.18.0 <25"
+    "node": "24.16.0"
   },
   "scripts": {
-    "prestart": "npm run build",
-    "start": "node server.js",
-    "dev": "vite --host 127.0.0.1 --port 5173",
-    "build": "tsc -b && vite build",
-    "typecheck": "tsc -b --pretty false",
-    "test": "npm run test:server && npm run test:frontend",
-    "test:server": "node --test test/*.test.mjs",
-    "test:frontend": "vitest run",
-    "test:ui": "playwright test test/ui-smoke.spec.cjs",
-    "test:soak": "node --test test/soak-72h.test.mjs",
-    "package:win": "powershell -NoProfile -ExecutionPolicy Bypass -File tools/package-win.ps1",
-    "release:gate": "node tools/release-gate.js"
-  },
-  "dependencies": {
-    "react": "19.2.8",
-    "react-dom": "19.2.8"
+    "typecheck": "tsc --noEmit",
+    "build": "node scripts/build.mjs",
+    "test": "node scripts/test.mjs --import ./scripts/test-loopback-http.mjs --test --test-concurrency=1 build/tests/*.test.js",
+    "lint": "node scripts/lint.mjs",
+    "package": "node scripts/package.mjs",
+    "build:ide": "node scripts/build-ide.mjs",
+    "brand:ide": "node scripts/brand-ide.mjs",
+    "test:ide": "node scripts/test-ide.mjs",
+    "ide": "node build/src/ide/start.js",
+    "start": "build\\native\\resource-budget.exe launch node_modules\\electron\\dist\\electron.exe build\\desktop\\main.cjs",
+    "test:frontend": "node scripts/test.mjs scripts/test-frontend.mjs",
+    "cli": "node build/src/entry.js --cli",
+    "mcp": "node build/src/entry.js --mcp",
+    "test:smoke": "node scripts/test.mjs --import ./scripts/test-loopback-http.mjs --test --test-concurrency=1 build/tests/app-pause-mock.test.js build/tests/entrypoint-cli-mcp-acceptance.test.js build/tests/interfaces-history.test.js build/tests/desktop-provider-import.test.js build/tests/desktop-provider-connection.test.js"
   },
   "devDependencies": {
-    "@playwright/test": "1.62.1",
-    "@types/react": "19.2.18",
-    "@types/react-dom": "19.2.4",
-    "@vitejs/plugin-react": "6.0.5",
-    "typescript": "7.0.2",
-    "vite": "8.2.0",
-    "vitest": "4.1.10"
-  }
+    "@codemirror/lang-javascript": "6.2.5",
+    "@codemirror/lang-json": "6.0.2",
+    "@codemirror/lang-markdown": "6.5.2",
+    "@types/node": "24.10.1",
+    "@types/react": "18.3.28",
+    "@types/react-dom": "18.3.7",
+    "@types/vscode": "1.100.0",
+    "codemirror": "6.0.2",
+    "electron": "44.6.0",
+    "esbuild": "0.25.12",
+    "playwright": "1.58.2",
+    "rcedit": "5.0.2",
+    "react": "18.3.1",
+    "react-dom": "18.3.1",
+    "typescript": "5.9.3"
+  },
+  "license": "Apache-2.0"
 }

@@ -1,38 +1,32 @@
-node_modules/
-.cache/
+/node_modules/
+**/node_modules/
+/build/
+/release/
+/data/
+/evidence/
+/Microsoft/
+/NVIDIA Corporation/
 .tmp/
+.cache/
 .tools/
-.worktrees/
-.public-mirror/
-launcher/bin/
-launcher/obj/
-
-# Local state and secrets
-data/
+.deps/
 .env
 .env.*
-*.local
-
-# Build and packaged output
-dist/
-.packages/
-.playwright-cli/
-public/app/
-
-# Local source artwork; optimized, metadata-stripped variants live in assets/.
-LOGO.png
-
-# Generated reports and logs
-security-report.json
-logs/
-output/
-test-results/
+API.txt
+configuration.json
+backend.json
+credentials*.json
+secrets/
+*.key
+*.pem
+*.pfx
+*.db
+*.db-*
+*.sqlite
+*.sqlite3
+*.sqlite-*
+*.sqlite3-*
 *.log
-*.tmp
-*.tsbuildinfo
-
-# OS/editor noise
-.DS_Store
-Thumbs.db
-.vscode/
-.idea/
+*.jsonl
+__pycache__/
+*.pyc

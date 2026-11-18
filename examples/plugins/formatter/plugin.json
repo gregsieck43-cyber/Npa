@@ -1,0 +1,12 @@
+{
+  "api": "npn-plugin/1",
+  "id": "formatter",
+  "name": "NPN harmless text formatter",
+  "version": "1.0.0",
+  "description": "Original declarative fixture. No executable files, system, network or credential access.",
+  "permissions": ["text.transform"],
+  "operations": [
+    { "id": "clean", "title": "Trim and normalize line endings", "steps": ["normalize_newlines", "trim"] },
+    { "id": "shout", "title": "Trim and uppercase", "steps": ["trim", "uppercase"] }
+  ]
+}

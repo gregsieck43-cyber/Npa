@@ -1,0 +1,145 @@
+{
+  "formatVersion": 1,
+  "generatedAt": "2026-10-07T15:51:01.8479610Z",
+  "source": {
+    "path": "assets/brand/source-logo.png",
+    "sha256": "98b765ef208c685827770fd0d944667e195732dcdaa0142e9216767e8772016a",
+    "verifiedAfterSha256": "98b765ef208c685827770fd0d944667e195732dcdaa0142e9216767e8772016a",
+    "width": 1278,
+    "height": 1230,
+    "pixelFormat": "Format32bppArgb",
+    "hasAlpha": true,
+    "alphaMin": 0,
+    "alphaMax": 255,
+    "alphaCounts": {
+      "transparent": 1314979,
+      "partial": 255132,
+      "opaque": 1829
+    },
+    "importedCopy": "brand/source-logo.png"
+  },
+  "conversion": {
+    "tool": "Windows System.Drawing; no external image dependency",
+    "interpolation": "HighQualityBicubic",
+    "composition": "SourceCopy; Format32bppArgb",
+    "contentAlphaThreshold": 2,
+    "contentBoundsInclusive": [
+      208,
+      180,
+      1090,
+      864
+    ],
+    "cropRectangleXYWH": [
+      164,
+      136,
+      971,
+      773
+    ],
+    "paddingSourcePixels": 44,
+    "rule": "Keep all alpha>=2 source mark pixels, trim transparent margins and peripheral alpha=1/255 dust, preserve aspect ratio and centre on transparent square; no redrawing or colour alteration."
+  },
+  "ico": {
+    "path": "brand/app.ico",
+    "sizes": [
+      16,
+      24,
+      32,
+      48,
+      64,
+      128,
+      256
+    ],
+    "encoding": "PNG payloads in Windows ICO; 256 dimension byte is zero",
+    "bitsPerPixel": 32
+  },
+  "derivatives": [
+    {
+      "path": "brand/source-logo.png",
+      "kind": "original-import",
+      "width": 1278,
+      "height": 1230,
+      "bytes": 502272,
+      "sha256": "98b765ef208c685827770fd0d944667e195732dcdaa0142e9216767e8772016a"
+    },
+    {
+      "path": "brand/logo-16.png",
+      "kind": "application-icon",
+      "width": 16,
+      "height": 16,
+      "bytes": 732,
+      "sha256": "ce198bca7fcd06379d4d7c400e66ba912185151f31f5cfd98f3b4bdf19c7d3dc"
+    },
+    {
+      "path": "brand/logo-24.png",
+      "kind": "application-icon",
+      "width": 24,
+      "height": 24,
+      "bytes": 1262,
+      "sha256": "55551d60b6f487aba25a09e977e3cd88582c121feb79ca99be448a174bf89eaa"
+    },
+    {
+      "path": "brand/logo-32.png",
+      "kind": "application-icon",
+      "width": 32,
+      "height": 32,
+      "bytes": 1868,
+      "sha256": "cb5655f064d4b1b03181c94598b6785004f9ab086142538d366bd7b6572b1712"
+    },
+    {
+      "path": "brand/logo-48.png",
+      "kind": "application-icon",
+      "width": 48,
+      "height": 48,
+      "bytes": 3447,
+      "sha256": "bd465fab1ec6e57d4a8943c940e347a376ea80bfd45bdefec9c10944ef048663"
+    },
+    {
+      "path": "brand/logo-64.png",
+      "kind": "application-icon",
+      "width": 64,
+      "height": 64,
+      "bytes": 5527,
+      "sha256": "75b48b5c5b4710f93d8bba31263789a469aa0787b9d03bfa2df88c7d6c6d1a5f"
+    },
+    {
+      "path": "brand/logo-128.png",
+      "kind": "application-icon",
+      "width": 128,
+      "height": 128,
+      "bytes": 17382,
+      "sha256": "30fea3807c14276a2a7f19e85268a38469ba55867bbe6453d0626c3f8c0e1712"
+    },
+    {
+      "path": "brand/logo-256.png",
+      "kind": "application-icon",
+      "width": 256,
+      "height": 256,
+      "bytes": 58481,
+      "sha256": "7a01f2ad8660b1bd340bb71dde085822cf8ca052c7f25b82a836cc376b94cb80"
+    },
+    {
+      "path": "brand/logo-512.png",
+      "kind": "application-icon",
+      "width": 512,
+      "height": 512,
+      "bytes": 202009,
+      "sha256": "209900b662260c012387fd3410c7d5064087a4b7c0648fc7233dc0e89c13ccb4"
+    },
+    {
+      "path": "logo.png",
+      "kind": "ui-icon",
+      "width": 512,
+      "height": 512,
+      "bytes": 202009,
+      "sha256": "209900b662260c012387fd3410c7d5064087a4b7c0648fc7233dc0e89c13ccb4"
+    },
+    {
+      "path": "brand/app.ico",
+      "kind": "windows-ico",
+      "width": 256,
+      "height": 256,
+      "bytes": 88817,
+      "sha256": "72dd8d999a0b47c903b32f78e60ee66ab49b577c6ac69a679a92988ca20ab9b2"
+    }
+  ]
+}
