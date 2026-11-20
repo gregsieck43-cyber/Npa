@@ -169,10 +169,10 @@ cpSync('examples', path.join(appRoot, 'examples'), { recursive: true });
 copyFileSync('LICENSE', path.join(appRoot, 'LICENSE'));
 writeFileSync(path.join(appRoot, 'package.json'), JSON.stringify({ name: 'npn-gamma-agent', version: metadata.version, type: 'module', main: 'desktop/main.cjs' }, null, 2));
 if (existsSync('assets')) cpSync('assets', path.join(appRoot, 'assets'), { recursive: true });
-const licenses = ['DSH frontend components — DeepSeek Harness 0.2.0-rc.2\n' + readFileSync('licenses/DSH-MIT.txt', 'utf8'),
+const licenses = ['Model metadata — models.dev\n' + readFileSync('licenses/models.dev-MIT.txt', 'utf8'),'DSH frontend components — DeepSeek Harness 0.2.0-rc.2\n' + readFileSync('licenses/DSH-MIT.txt', 'utf8'),
   'VSCodium / Code - OSS portable editor\n' + readFileSync(path.join(ideHost.directory, 'resources/app/LICENSE.txt'), 'utf8') + '\nThe complete editor ThirdPartyNotices.txt and Chromium notices are preserved under resources/ide-host.'];
 const lock = JSON.parse(readFileSync('package-lock.json', 'utf8'));
-for (const dependency of Object.keys(lock.packages).filter(key => /^node_modules\/(?:@codemirror\/|@lezer\/|codemirror$|react$|react-dom$|scheduler$|loose-envify$|object-assign$|style-mod$|w3c-keyname$|crelt$)/.test(key))) {
+for (const dependency of Object.keys(lock.packages).filter(key => /^node_modules\/(?:pptxgenjs$|fflate$|jszip$|pako$|lie$|immediate$|setimmediate$|image-size$|queue$|readable-stream$|core-util-is$|inherits$|isarray$|process-nextick-args$|safe-buffer$|string_decoder$|util-deprecate$|@codemirror\/|@lezer\/|codemirror$|react$|react-dom$|scheduler$|loose-envify$|object-assign$|style-mod$|w3c-keyname$|crelt$)/.test(key))) {
   const packageJson = JSON.parse(readFileSync(path.join(dependency, 'package.json'), 'utf8'));
   for (const filename of ['LICENSE', 'LICENSE.md', 'LICENSE-MIT']) {
     if (existsSync(path.join(dependency, filename))) { licenses.push(`${packageJson.name}@${packageJson.version}\n${readFileSync(path.join(dependency, filename), 'utf8')}`); break; }

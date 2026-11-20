@@ -1,3 +1,4 @@
+import { isOfficeFile, officeText } from './office-input.js';
 import { lstat, open, realpath } from 'node:fs/promises';
 import type { BigIntStats } from 'node:fs';
 import path from 'node:path';
@@ -28,7 +29,7 @@ const PROTECTED_SEGMENTS = new Set(['.git', '.aws', '.ssh', '.gnupg', '.codex', 
  * the requested path before any stat or read, and no model request is built here. The returned text
  * is untrusted data; the caller is responsible for framing it as such.
  */
-export async function readSideAttachments(value: unknown): Promise<{ name: string; text: string }[]> {
+export async function readSideAttachments(value: unknown, office = false, protectedRoot?: string): Promise<{ name: string; text: string }[]> {
   if (value === undefined) return [];
   if (!Array.isArray(value) || value.length > SIDE_ATTACHMENTS_MAX) invalid('Attach at most five text files.');
   const files: { name: string; text: string }[] = [];
@@ -40,6 +41,10 @@ export async function readSideAttachments(value: unknown): Promise<{ name: strin
     const requested = optionalString(attachment.path, `${label}.path`, 4096);
     if (!requested || !path.isAbsolute(requested) || !isLocalPath(requested)) invalid(`${label}.path must be an absolute local file path on this drive.`);
     const absolute = path.resolve(requested);
+    if (protectedRoot) {
+      const relative = path.relative(protectedRoot, absolute);
+      if (!relative.startsWith('..' + path.sep) && relative !== '..' && !path.isAbsolute(relative)) denied('Internal application data cannot be attached.');
+    }
     assertUnprotected(absolute, label);
     const real = await linkFreePath(absolute, label);
     const info = await lstat(real, { bigint: true }).catch(() => undefined);
@@ -61,6 +66,10 @@ export async function readSideAttachments(value: unknown): Promise<{ name: strin
     }
     total += raw.length;
     if (total > SIDE_ATTACHMENTS_TOTAL) invalid('Side chat attachments are limited to 256 KB in total.');
+    if (office && isOfficeFile(absolute, raw)) {
+      files.push({ name: path.basename(absolute), text: officeText(absolute, raw) });
+      continue;
+    }
     if (raw.includes(0)) invalid(`${label} is binary; side chat accepts UTF-8 text only.`);
     const text = decodeUtf8(raw, label);
     files.push({ name: typeof attachment.name === 'string' && attachment.name.trim() ? attachment.name : path.basename(absolute), text });

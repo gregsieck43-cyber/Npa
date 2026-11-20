@@ -70,26 +70,35 @@ class ResourceBudget {
         var result = new MemoryStatus(); result.Length = (uint)Marshal.SizeOf(result);
         Check(GlobalMemoryStatusEx(ref result), "Read physical memory"); return result;
     }
-    static void Attach(IntPtr job, uint pid, bool required) {
-        // SET_QUOTA | TERMINATE | QUERY_LIMITED_INFORMATION; no breakaway flag is granted.
-        IntPtr process = OpenProcess(0x1101, false, pid);
+    [DllImport("kernel32.dll", SetLastError=true)] static extern bool GetProcessTimes(IntPtr process, out long created, out long exited, out long kernel, out long user);
+    static long Attach(IntPtr job, uint pid, bool required, long parentCreated = 0, long snapshotAt = Int64.MaxValue) {
+        // SYNCHRONIZE | SET_QUOTA | TERMINATE | QUERY_LIMITED_INFORMATION.
+        IntPtr process = OpenProcess(0x101101, false, pid);
         if (process == IntPtr.Zero) {
-            if (!required && Marshal.GetLastWin32Error() == 87) return; // exited during enumeration
+            if (!required && Marshal.GetLastWin32Error() == 87) return 0; // exited during enumeration
             throw new Win32Exception(Marshal.GetLastWin32Error(), "Open owned process " + pid);
         }
         try {
+            long created, exited, kernel, user;
+            Check(GetProcessTimes(process, out created, out exited, out kernel, out user), "Read process creation time");
+            // Toolhelp reports parent PIDs even after that parent exits. Reject recycled PIDs
+            // on the same handle we would assign. New children already inherit the owner's job.
+            if (created < parentCreated || created > snapshotAt) return 0;
             bool inside;
             Check(IsProcessInJob(process, job, out inside), "Query owned job");
             if (!inside && !AssignProcessToJobObject(job, process)) {
-                int error = Marshal.GetLastWin32Error(); uint code;
-                if (!required && GetExitCodeProcess(process, out code) && code != 259) return;
+                int error = Marshal.GetLastWin32Error();
+                if (IsProcessInJob(process, job, out inside) && inside) return created;
+                if (!required && WaitForSingleObject(process, 100) == 0) return 0;
                 throw new Win32Exception(error, "Attach owned process " + pid);
             }
+            return created;
         } finally { CloseHandle(process); }
     }
-    static void AttachExistingChildren(IntPtr job, uint owner) {
+    static void AttachExistingChildren(IntPtr job, uint owner, long ownerCreated) {
         // Chromium can create children before its JS main entry runs. Attach the owner first so
         // all subsequent children inherit, then cover the already-created descendants.
+        long snapshotAt = DateTime.UtcNow.ToFileTimeUtc();
         IntPtr snapshot = CreateToolhelp32Snapshot(2, 0);
         if (snapshot == new IntPtr(-1)) throw new Win32Exception(Marshal.GetLastWin32Error());
         var entries = new List<ProcessEntry>();
@@ -97,13 +106,15 @@ class ResourceBudget {
             var entry = new ProcessEntry(); entry.Size = (uint)Marshal.SizeOf(entry);
             if (Process32First(snapshot, ref entry)) do { entries.Add(entry); } while (Process32Next(snapshot, ref entry));
         } finally { CloseHandle(snapshot); }
-        var owned = new HashSet<uint>(); owned.Add(owner);
+        var owned = new Dictionary<uint, long>(); owned.Add(owner, ownerCreated);
+        var seen = new HashSet<uint>(); seen.Add(owner);
         uint self = (uint)Process.GetCurrentProcess().Id;
         bool added;
         do {
             added = false;
-            foreach (var entry in entries) if (entry.Id != self && owned.Contains(entry.Parent) && !owned.Contains(entry.Id)) {
-                Attach(job, entry.Id, false); owned.Add(entry.Id); added = true;
+            foreach (var entry in entries) if (entry.Id != self && owned.ContainsKey(entry.Parent) && seen.Add(entry.Id)) {
+                long created = Attach(job, entry.Id, false, owned[entry.Parent], snapshotAt);
+                if (created != 0) { owned.Add(entry.Id, created); added = true; }
             }
         } while (added);
     }
@@ -227,8 +238,8 @@ class ResourceBudget {
             // Leave room for the OS and other applications, and stop the product reaching 12 GiB
             // even on large-memory machines. This is committed memory, not a claim about RSS.
             job = CreateBudget(suffix, args.Length > 3 ? UInt64.Parse(args[3]) : UInt64.MaxValue);
-            Attach(job, owner, true); Attach(job, (uint)Process.GetCurrentProcess().Id, true);
-            AttachExistingChildren(job, owner);
+            long ownerCreated = Attach(job, owner, true); Attach(job, (uint)Process.GetCurrentProcess().Id, true);
+            AttachExistingChildren(job, owner, ownerCreated);
             KeepNamedJobAlive(job, owner);
             Report(job);
             if (args[0] == "watch") {

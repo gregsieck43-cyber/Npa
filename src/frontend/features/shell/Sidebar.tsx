@@ -82,7 +82,7 @@ function NewButton({ mode }: { mode: AppMode }) {
         <Menu onClose={() => setOpen(false)} items={[
           ...(Object.keys(modeMeta) as AppMode[]).map(key => ({ id: key, label: `新建${modeMeta[key].noun}`, icon: modeMeta[key].icon, hint: modeMeta[key].label, onSelect: () => { setMode(key); goHome(key); } })),
           'divider',
-          { id: 'ide', label: '在 IDE 中打开项目', icon: 'terminal', onSelect: () => openIdeView() },
+          ...(mode === 'code' ? [{ id: 'ide', label: '在 IDE 中打开项目', icon: 'terminal' as const, onSelect: () => openIdeView() }] : []),
           { id: 'projects', label: '登记新项目…', icon: 'folder', onSelect: () => go('projects') },
         ]} />
       </Popover>
@@ -110,7 +110,7 @@ function Rail() {
       {item('search', '搜索与命令  Ctrl+K', false, () => togglePalette(true))}
       {item('folder', '项目', view.kind === 'projects', () => go('projects'))}
       {item('clock', '历史', view.kind === 'history', () => go('history'))}
-      {item('terminal', 'IDE', view.kind === 'ide', () => openIdeView())}
+      {mode === 'code' && item('terminal', 'IDE', view.kind === 'ide', () => openIdeView())}
       {pending > 0 && item('shieldAlert', '待审批', false, () => { const first = Object.values(approvals)[0]; if (first) void openSession(first.sessionId); }, pending)}
       <span className="grow" />
       {item(theme === 'dark' ? 'moon' : 'sun', '切换主题', false, () => toggleTheme())}
@@ -176,7 +176,7 @@ function ExpandedSidebar() {
       <nav className="sidebar__nav">
         <NavItem icon="home" label="首页" active={view.kind === 'home'} onClick={() => goHome()} />
         <NavItem icon="folder" label="项目" active={view.kind === 'projects'} onClick={() => go('projects')} />
-        <NavItem icon="terminal" label="IDE" active={view.kind === 'ide'} onClick={() => openIdeView()} />
+        {mode === 'code' && <NavItem icon="terminal" label="IDE" active={view.kind === 'ide'} onClick={() => openIdeView()} />}
         <NavItem icon="clock" label="历史" active={view.kind === 'history'} onClick={() => go('history')} />
         {pendingApprovals > 0 && <NavItem icon="shieldAlert" label="待审批" active={false} count={pendingApprovals} onClick={() => { const first = Object.values(approvals)[0]; if (first) void openSession(first.sessionId); }} />}
       </nav>

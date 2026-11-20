@@ -229,6 +229,13 @@ export class ProductWorkspace implements WorkspaceDomain {
     return this.view(this.roots.touch(record.id));
   }
 
+  async editProject(id: string | undefined, name: string, folders: string[]): Promise<ProjectView> {
+    for (const folder of folders) this.rt.services.workspacePath(folder, false);
+    const record = this.roots.edit(id, name, folders);
+    if (id) await this.stopTerminals(id);
+    return this.view(record);
+  }
+
   async removeProject(projectId: string): Promise<void> {
     const record = this.roots.get(this.projectId(projectId));
     if (!record) notFound('Project was not found.');
@@ -569,7 +576,7 @@ export class ProductWorkspace implements WorkspaceDomain {
   private async view(record: WorkspaceRootRecord): Promise<ProjectView> {
     const view: ProjectView = {
       id: record.id, name: record.name, path: record.path, lastOpenedAt: record.lastOpenedAt,
-      sessions: this.rt.store.projectSessionCount(record.id),
+      sessions: this.rt.store.projectSessionCount(record.id), sourceFolders: record.sourceFolders ?? [record.path],
     };
     const summary = await this.gitSummary(record.path);
     if (summary.branch) view.branch = summary.branch;

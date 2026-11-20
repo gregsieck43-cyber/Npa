@@ -211,6 +211,11 @@ export class ProductApi {
       return this.tasks.control(segment(match[1]!), action, { expectedRevision: value.expectedRevision as number | undefined, plan: value.plan as never });
     }
     if (method === 'GET' && route === '/models') return this.models.list();
+    if (method === 'POST' && route === '/models/discover') {
+      const v = pickFields(body, ['id', 'baseUrl', 'apiKey', 'wire'], 'Model discovery');
+      return this.models.discover(v);
+    }
+    if (method === 'POST' && route === '/models/configure') return this.models.save(body as never, true);
     if (method === 'POST' && route === '/models/save') return this.models.save(body as never);
     if (method === 'POST' && (match = /^\/models\/([^/]+)\/remove$/.exec(route))) {
       await this.models.remove(segment(match[1]!));
@@ -241,6 +246,11 @@ export class ProductApi {
       return { cleared: true };
     }
     if (method === 'GET' && (route === '/workspace/projects' || route === '/projects')) return this.workspace.projects();
+    if (method === 'POST' && route === '/workspace/project-edit') {
+      const value = pickFields(body, ['id', 'name', 'folders'], 'Project');
+      if (!Array.isArray(value.folders) || value.folders.some(folder => typeof folder !== 'string')) invalid('Select source folders.');
+      return this.workspace.editProject(value.id === undefined ? undefined : requiredString(value.id, 'id', 200), requiredString(value.name, 'name', 100), value.folders as string[]);
+    }
     if (method === 'POST' && route === '/workspace/projects') {
       const value = pickFields(body, ['path'], 'Project input');
       return this.workspace.addProject(requiredString(value.path, 'path', 4096));

@@ -9,13 +9,14 @@ import { bytes, compactNumber, percent } from '../../lib/format';
 import { modeMeta } from '../../lib/status';
 import { ModelPicker, PermissionPicker, ReasoningPicker } from './Pickers';
 import { useTarget } from './target';
+import { ComposerProject } from './ComposerProject';
 import { SessionOptions } from './SessionOptions';
 
 interface SlashCommand { id: string; label: string; detail: string; icon: IconName; run: () => void }
 
 const placeholders = {
   chat: '问点什么，或输入 / 查看命令…',
-  cowork: '描述一个长程目标：要达成什么、约束是什么、怎样算完成…',
+  cowork: '添加材料，或说说需要整理、撰写什么…',
   code: '描述要在项目里做的修改，或粘贴报错…',
 };
 
@@ -23,13 +24,14 @@ const placeholders = {
 export function Composer({ variant = 'dock', projectId, onSent, placeholder }: { variant?: 'hero' | 'dock' | 'compact'; projectId?: string; onSent?: (sessionId: string) => void; placeholder?: string }) {
   const target = useTarget(), sessionId = target.sessionId;
   const session = useApp(s => (sessionId ? s.sessions[sessionId] : undefined));
+  const hasTask = useApp(s => sessionId ? !!s.details[sessionId]?.task : false);
   const effectiveMode = session?.mode ?? target.mode;
   const draftKey = sessionId ?? `new:${effectiveMode}${target.embedded ? ':embedded' : ''}`;
   const text = useApp(s => s.drafts[draftKey] ?? '');
   const metrics = useApp(s => (sessionId ? s.metrics[sessionId] : undefined));
   const sendKey = useApp(s => s.settings?.defaults.sendKey ?? 'enter');
   const [attachments, setAttachments] = useState<Attachment[]>([]);
-  const [planFirst, setPlanFirst] = useState(effectiveMode === 'cowork');
+  const [planFirst, setPlanFirst] = useState(false);
   const [dragging, setDragging] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const submission = useRef<object>();
@@ -54,7 +56,7 @@ export function Composer({ variant = 'dock', projectId, onSent, placeholder }: {
   }, [text]);
 
   useEffect(() => { area.current?.focus(); }, [sessionId, effectiveMode]);
-  useEffect(() => { setPlanFirst(effectiveMode === 'cowork'); }, [effectiveMode]);
+  useEffect(() => { setPlanFirst(false); setAttachments([]); }, [draftKey]);
 
   const commands = useMemo<SlashCommand[]>(() => {
     const list: SlashCommand[] = [
@@ -63,9 +65,9 @@ export function Composer({ variant = 'dock', projectId, onSent, placeholder }: {
       { id: 'trace', label: '/trace', detail: '查看执行轨迹', icon: 'activity', run: () => openInspector('trace') },
       { id: 'new', label: '/new', detail: `新建${modeMeta[effectiveMode].noun}`, icon: 'plus', run: () => goHome(effectiveMode) },
     ];
-    if (session?.mode === 'chat') list.push({ id: 'promote', label: '/promote', detail: '把当前对话升级为 Cowork 长任务', icon: 'layers', run: () => void promote(session.id, text.replace(/^\/\w*\s*/, '') || session.title, ['目标完成且有可验证证据']) });
-    return list;
-  }, [effectiveMode, session, text]);
+    if (session?.mode === 'chat') list.push({ id: 'promote', label: '/promote', detail: '把当前对话升级为 Cowork 办公会话', icon: 'layers', run: () => void promote(session.id, text.replace(/^\/\w*\s*/, '') || session.title, ['目标完成且有可验证证据']) });
+    return list.filter(cmd => !(effectiveMode === 'cowork' && ['inspect','trace'].includes(cmd.id)) && (cmd.id !== 'plan' || (effectiveMode !== 'chat' && !sessionId)));
+  }, [effectiveMode, session, sessionId, text]);
 
   const slashQuery = /^\/(\w*)$/.exec(text)?.[1];
   const slashMatches = slashQuery !== undefined ? commands.filter(c => c.id.startsWith(slashQuery)) : [];
@@ -100,16 +102,19 @@ export function Composer({ variant = 'dock', projectId, onSent, placeholder }: {
     if (wantsSend) { event.preventDefault(); void submit(); }
   };
 
-  const onDrop = (event: DragEvent) => {
+  const onDrop = async (event: DragEvent) => {
     event.preventDefault();
     setDragging(false);
-    const files = [...event.dataTransfer.files].map<Attachment>(file => ({ id: `${file.name}-${file.size}-${file.lastModified}`, name: file.name, bytes: file.size, kind: file.type.startsWith('image/') ? 'image' : 'file' }));
-    setAttachments(current => [...current, ...files.filter(file => !current.some(item => item.id === file.id))]);
+    const scopeAtDrop = scope.current;
+    const selected = [...event.dataTransfer.files];
+    const files = await guard('添加附件失败', () => gateway.desktop.droppedFiles(selected));
+    if (files && scopeAtDrop === scope.current) setAttachments(current => [...current, ...files.filter(file => !current.some(item => item.id === file.id))]);
   };
 
   const pickFiles = async () => {
+    const scopeAtPick = scope.current;
     const picked = await guard('选择文件失败', () => gateway.desktop.pickFiles());
-    if (picked?.length) setAttachments(current => [...current, ...picked]);
+    if (picked?.length && scope.current === scopeAtPick) setAttachments(current => [...current, ...picked.filter(p => !current.some(item => item.id === p.id))]);
   };
 
   const contextShare = metrics?.contextUsed && metrics.contextWindow ? metrics.contextUsed / metrics.contextWindow : undefined;
@@ -117,6 +122,7 @@ export function Composer({ variant = 'dock', projectId, onSent, placeholder }: {
   return (
     <div className={`composer composer--${variant}${dragging ? ' is-dragging' : ''}${busy ? ' is-busy' : ''}`} onDragOver={event => { event.preventDefault(); setDragging(true); }} onDragLeave={() => setDragging(false)} onDrop={onDrop}>
       <div className="composer__glow" />
+      {!target.embedded && <ComposerProject sessionId={sessionId} />}
       {slashMatches.length > 0 && (
         <div className="slash-menu">
           {slashMatches.map((command, i) => (
@@ -151,18 +157,14 @@ export function Composer({ variant = 'dock', projectId, onSent, placeholder }: {
         <button ref={attachAnchor} type="button" className="composer__tool" aria-label="添加附件" data-tip="添加附件" data-tip-side="top" onClick={() => setAttachMenu(true)}><Icon name="plus" size={16} /></button>
         <Popover anchor={attachAnchor} open={attachMenu} onClose={() => setAttachMenu(false)} placement="top" width={210}>
           <Menu onClose={() => setAttachMenu(false)} items={[
-            { id: 'file', label: '添加文件', icon: 'paperclip', onSelect: () => void pickFiles() },
+            { id: 'file', label: '添加附件', icon: 'paperclip', onSelect: () => void pickFiles() },
+            ...(effectiveMode !== 'chat' && (!session || hasTask) ? [{ id: 'plan', label: '计划模式', hint: planFirst ? '已开启' : '关闭', icon: 'listChecks' as IconName, onSelect: () => setPlanFirst(!planFirst) }] : []),
             { id: 'image', label: '添加图片', icon: 'image', onSelect: () => void pickFiles() },
             ...(sessionId ? [{ id: 'session-options', label: '会话高级设置与导出', icon: 'sliders' as IconName, onSelect: () => setOptionsOpen(true) }] : []),
             ...(effectiveMode === 'code' ? [{ id: 'sel', label: '引用编辑器选区', icon: 'code' as IconName, hint: 'IDE', onSelect: () => void gateway.desktop.openIde() }] : []),
           ]} />
         </Popover>
-        {effectiveMode !== 'chat' && <PermissionPicker />}
-        {effectiveMode !== 'chat' && (
-          <button type="button" className={`composer__toggle${planFirst ? ' is-on' : ''}`} onClick={() => setPlanFirst(!planFirst)} data-tip="先给出计划并等待你确认" data-tip-side="top">
-            <Icon name="listChecks" size={14} />计划优先
-          </button>
-        )}
+        {(effectiveMode === 'code' || (effectiveMode === 'cowork' && (planFirst || hasTask))) && <PermissionPicker />}
         <span className="grow" />
         <ModelPicker />
         <ReasoningPicker />

@@ -2,7 +2,7 @@
   "name": "npn-ide",
   "displayName": "NPN Gamma IDE",
   "description": "Native professional editor integration with the independent NPN Agent backend.",
-  "version": "0.7.5",
+  "version": "0.0.1",
   "publisher": "npn-gamma",
   "private": true,
   "license": "UNLICENSED",

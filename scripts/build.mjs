@@ -7,6 +7,7 @@ import { buildResourceBudget } from './build-resource-budget.mjs';
 removeGeneratedPath(path.resolve('build'), ['build']);
 const check = spawnSync(process.execPath, ['node_modules/typescript/bin/tsc'], { stdio: 'inherit' });
 if (check.status !== 0) process.exit(check.status ?? 1);
+await build({ entryPoints: ['src/product/office-input.ts'], bundle: true, outfile: 'build/src/product/office-input.js', platform: 'node', format: 'esm' });
 buildResourceBudget();
 // The Electron shell loads build/frontend/index.html and a shipped build must use the real bridge
 // gateway, so the normal build owns that bundle. The legacy src/ui renderer is no longer built or

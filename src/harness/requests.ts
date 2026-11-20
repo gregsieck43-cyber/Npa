@@ -1,3 +1,4 @@
+import { endpoint, wireBody } from '../runtime/provider-wire.js';
 import { createHash } from 'node:crypto';
 import type { ModelResult, ProviderConfig } from '../contracts.js';
 import type { Services } from '../app/services.js';
@@ -59,7 +60,8 @@ export class Requests {
     const clean = this.profiles.sanitize(applied), recordContent = this.recordContent();
     const { coordination: _coordination, ...recordContext } = context;
     const budgetTaskIds = context.taskId ? this.services.kernel.accountingAncestors(context.taskId) : [];
-    return this.store.createRequest({ ...recordContext, ...(budgetTaskIds.length ? { budgetTaskIds } : {}), profileId, status: 'draft', endpoint: new URL('chat/completions', config.baseUrl.replace(/\/?$/, '/')).href,
+    return this.store.createRequest({ ...recordContext, ...(budgetTaskIds.length ? { budgetTaskIds } : {}), profileId, status: 'draft', endpoint: endpoint(config).href,
+      wireBody: recordContent && config.wire ? wireBody(structuredClone(clean), config.wire) : undefined,
       body: recordContent ? clean : undefined, bodyHash: createHash('sha256').update(JSON.stringify(clean)).digest('hex'),
       sources: recordContent ? this.profiles.sanitize(effectiveParts(clean, sources)) : [], recordContent, draft: '',
       exposedToolNames: clean.tools?.map((tool: any) => tool.function.name) ?? [] });
@@ -104,7 +106,7 @@ export class Requests {
         record = context.requestId ? this.store.getRequest(context.requestId) : this.prepare(context, body, compiled.sources, true);
         if (claim) this.store.confirmRequestOverrides(claim.token, record.id);
         const recordContent = record.recordContent;
-        record = this.store.updateRequest(record.id, { status: 'running', body: recordContent ? body : undefined,
+        record = this.store.updateRequest(record.id, { status: 'running', body: recordContent ? body : undefined, wireBody: recordContent && config.wire ? wireBody(structuredClone(body), config.wire) : undefined,
           model: body.model, startedAt: new Date().toISOString(), contextWindowTokens: body.model === config.model ? config.contextWindowTokens : undefined,
           bodyHash: createHash('sha256').update(JSON.stringify(body)).digest('hex'), sources: recordContent ? effectiveParts(body, compiled.sources.length ? compiled.sources : record.sources.filter(p => !p.id.startsWith('effective:'))) : [],
           exposedToolNames: body.tools?.map((tool: any) => tool.function.name) ?? [] });

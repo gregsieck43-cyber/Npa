@@ -71,8 +71,8 @@ export function TopBar() {
         <IconButton ref={more} icon="more" label="更多" onClick={() => setMenu(true)} />
         <Popover anchor={more} open={menu} onClose={() => setMenu(false)} align="end" width={220}>
           <Menu onClose={() => setMenu(false)} items={[
-            ...(session?.mode === 'chat' ? [{ id: 'promote', label: '升级为 Cowork 长任务', icon: 'layers' as const, onSelect: () => void promote(session.id, session.title, ['目标完成且有可验证证据']) }, 'divider' as const] : []),
-            { id: 'ide', label: '打开 IDE 工作台', icon: 'terminal', onSelect: () => openIdeView() },
+            ...(session?.mode === 'chat' ? [{ id: 'promote', label: '升级为 Cowork 办公会话', icon: 'layers' as const, onSelect: () => void promote(session.id, session.title, ['目标完成且有可验证证据']) }, 'divider' as const] : []),
+            ...(mode === 'code' ? [{ id: 'ide', label: '打开 IDE 工作台', icon: 'terminal' as const, onSelect: () => openIdeView() }] : []),
             { id: 'projects', label: '项目', icon: 'folder', onSelect: () => go('projects') },
             { id: 'history', label: '历史', icon: 'clock', onSelect: () => go('history') },
             { id: 'settings', label: '设置', icon: 'sliders', hint: 'Ctrl+,', onSelect: () => openSettings() },

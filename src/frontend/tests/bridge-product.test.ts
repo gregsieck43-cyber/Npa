@@ -908,9 +908,9 @@ describe('BridgeGateway 未接线方法', () => {
       { name: 'tasks', keys: ['control', 'get'] },
       { name: 'inspector', keys: ['context', 'diffs', 'prompt', 'recall', 'replay', 'requests', 'savePrompt', 'toolDetail', 'tools', 'trace'] },
       { name: 'metrics', keys: ['activity', 'session'] },
-      { name: 'workspace', keys: ['addProject', 'commit', 'diagnostics', 'fileDiff', 'files', 'projects', 'readFile', 'removeProject', 'search', 'sourceControl', 'terminal', 'writeFile'] },
-      { name: 'settings', keys: ['clearHistory', 'get', 'instructions', 'mcp', 'mcpCatalog', 'models', 'plugins', 'reconnectMcp', 'removeMcp', 'removeModel', 'saveMcp', 'saveModel', 'skills', 'testModel', 'toggleSkill', 'update'] },
-      { name: 'desktop', keys: ['copyText', 'openDataFolder', 'openIde', 'pickFiles', 'version'] },
+      { name: 'workspace', keys: ['addProject', 'commit', 'diagnostics', 'editProject', 'fileDiff', 'files', 'pickSourceFolder', 'projects', 'readFile', 'removeProject', 'search', 'sourceControl', 'terminal', 'writeFile'] },
+      { name: 'settings', keys: ['clearHistory', 'discoverModels', 'get', 'instructions', 'mcp', 'mcpCatalog', 'models', 'plugins', 'reconnectMcp', 'removeMcp', 'removeModel', 'saveMcp', 'saveModel', 'skills', 'testModel', 'toggleSkill', 'update'] },
+      { name: 'desktop', keys: ['copyText', 'droppedFiles', 'officeFile', 'openDataFolder', 'openIde', 'pickFiles', 'version'] },
     ];
     const surface = gateway as unknown as Record<string, Record<string, unknown>>;
     for (const group of groups) {

@@ -683,7 +683,7 @@ class Inspector implements InspectorDomain {
   // ---------- request helpers ----------
 
   private requestView(record: RequestRecord): RequestRecordView {
-    const body = record.recordContent ? record.body ?? null : null;
+    const body = record.recordContent ? record.wireBody ?? record.body ?? null : null;
     const response = record.recordContent && record.response ? {
       content: boundedText(record.response.content, MAX_RESPONSE_CHARS),
       finishReason: record.response.finishReason,

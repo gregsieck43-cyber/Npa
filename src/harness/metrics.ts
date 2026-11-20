@@ -47,7 +47,7 @@ export function initializeMetrics(db: DatabaseSync): void {
     CREATE TRIGGER IF NOT EXISTS metric_scopes_delete AFTER DELETE ON requests BEGIN DELETE FROM request_metric_scopes WHERE request_id=old.id; END;
     CREATE TRIGGER IF NOT EXISTS metrics_delete AFTER DELETE ON requests BEGIN DELETE FROM request_metrics WHERE id=old.id; END;`);
   // Only missing records need migration; no large response content crosses the SQLite boundary.
-  for (const row of db.prepare(`SELECT json_remove(record,'$.sources','$.draft','$.response','$.body.messages','$.body.tools') AS record
+  for (const row of db.prepare(`SELECT json_remove(record,'$.wireBody','$.sources','$.draft','$.response','$.body.messages','$.body.tools') AS record
     FROM requests WHERE id NOT IN (SELECT id FROM request_metrics)`).all() as { record: string }[]) saveMetrics(db, JSON.parse(row.record));
   db.exec('INSERT OR IGNORE INTO request_metric_scopes SELECT task_id,id FROM request_metrics WHERE task_id IS NOT NULL');
 }

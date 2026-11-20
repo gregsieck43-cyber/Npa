@@ -451,7 +451,7 @@ export class HarnessStore {
     const conditions = [descending ? 'seq<?' : 'seq>?'], values: (string | number)[] = [query.after ?? (descending ? Number.MAX_SAFE_INTEGER : 0)];
     for (const [column, value] of [['session_id', query.sessionId], ['task_id', query.taskId]] as const) if (value) { conditions.push(`${column}=?`); values.push(value); }
     const limit = Math.max(1, Math.min(200, query.limit ?? 50));
-    const rows = this.db.prepare(`SELECT seq, json_remove(record,'$.body','$.sources','$.draft','$.response') AS record FROM requests WHERE ${conditions.join(' AND ')} ORDER BY seq ${descending ? 'DESC' : 'ASC'} LIMIT ?`).all(...values, limit) as { seq: number; record: string }[];
+    const rows = this.db.prepare(`SELECT seq, json_remove(record,'$.wireBody','$.body','$.sources','$.draft','$.response') AS record FROM requests WHERE ${conditions.join(' AND ')} ORDER BY seq ${descending ? 'DESC' : 'ASC'} LIMIT ?`).all(...values, limit) as { seq: number; record: string }[];
     return { requests: rows.map(row => decode<RequestRecord>(row)!), nextCursor: rows.length === limit ? rows.at(-1)!.seq : null };
   }
   latestRequest(sessionId: string, kind?: RequestRecord['kind']): RequestRecord | undefined {

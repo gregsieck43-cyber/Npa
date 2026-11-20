@@ -12,16 +12,15 @@ import { CoordinationHint } from '../panel/CoordinationPanel';
 
 const suggestions: Record<AppMode, { icon: IconName; title: string; prompt: string }[]> = {
   chat: [
-    { icon: 'sparkles', title: '解释一个概念', prompt: '用直观的方式解释 CRDT 与 OT 的区别，并给出适用场景。' },
-    { icon: 'pencil', title: '润色一段文字', prompt: '帮我把下面这段话改得更简洁专业：' },
-    { icon: 'globe', title: '联网检索', prompt: '搜索最新的 Electron 安全最佳实践并总结要点。' },
-    { icon: 'brain', title: '做一个决策', prompt: '我在 SQLite 与 PostgreSQL 之间犹豫，帮我按单机桌面应用的场景做取舍。' },
+    { icon: 'sparkles', title: '解释一个概念', prompt: '帮我用日常生活中的例子解释：' },
+    { icon: 'pencil', title: '润色文字', prompt: '请保留原意，把下面这段话改得更简洁：' },
+    { icon: 'brain', title: '比较选项', prompt: '帮我比较以下选项的优缺点：' },
   ],
   cowork: [
-    { icon: 'target', title: '迁移一个模块', prompt: '把审批流迁移到 effect outbox：先落盘意图再发送，崩溃后对账未知效果。' },
-    { icon: 'listChecks', title: '整理研究结论', prompt: '整理 reports 目录下关于长期记忆的结论，输出一份带来源的综述。' },
-    { icon: 'shieldCheck', title: '全面回归验收', prompt: '运行整套回归并汇总失败项，逐项给出根因假设与验证计划。' },
-    { icon: 'clock', title: '长期值守任务', prompt: '每完成一个阶段就创建检查点，持续推进直到所有验收项通过。' },
+    { icon: 'pencil', title: '整理会议纪要', prompt: '根据会议记录整理决议、负责人和待办事项。' },
+    { icon: 'listChecks', title: '汇总表格', prompt: '把材料中的数字和事项整理成可用的表格。' },
+    { icon: 'layers', title: '制作演示稿', prompt: '根据材料制作汇报演示稿，突出结论和依据。' },
+    { icon: 'globe', title: '撰写简报', prompt: '根据资料撰写简报，并列出信息来源。' },
   ],
   code: [
     { icon: 'alert', title: '修一个 Bug', prompt: '修复 read_history 第 2 页随全库新增文档漂移的问题，并补回归测试。' },
@@ -31,16 +30,16 @@ const suggestions: Record<AppMode, { icon: IconName; title: string; prompt: stri
   ],
 };
 
-function useActivity() {
+function useActivity(enabled: boolean) {
   const [days, setDays] = useState<ActivityDay[]>();
-  useEffect(() => { void guard('读取活动记录失败', () => gateway.metrics.activity(140)).then(result => setDays(result ?? [])); }, []);
+  useEffect(() => { if (enabled) void guard('读取活动记录失败', () => gateway.metrics.activity(140)).then(result => setDays(result ?? [])); }, [enabled]);
   return days;
 }
 
 export function HomeView() {
   const projectId = useApp(state => state.projectId);
   const mode = useApp(s => s.mode), sessions = useApp(s => s.sessions), approvals = useApp(s => s.approvals);
-  const activity = useActivity();
+  const activity = useActivity(mode === 'code');
   const [metric, setMetric] = useState<'events' | 'modelCalls' | 'toolEffects'>('events');
   const meta = modeMeta[mode];
   const recent = useMemo(() => Object.values(sessions).filter(s => s.mode === mode).sort((a, b) => b.updatedAt.localeCompare(a.updatedAt)).slice(0, 6), [sessions, mode]);
@@ -52,10 +51,10 @@ export function HomeView() {
       <div className="home__inner">
         <section className="hero">
           <div className="hero__orb" aria-hidden="true"><span /><span /><span /></div>
-          <h1 className="hero__title">{greeting()}，想{mode === 'chat' ? '聊点什么' : mode === 'cowork' ? '推进哪个长任务' : '改哪段代码'}？</h1>
+          <h1 className="hero__title">{greeting()}，想{mode === 'chat' ? '聊点什么' : mode === 'cowork' ? '处理哪份材料' : '改哪段代码'}？</h1>
           <p className="hero__sub"><Icon name={meta.icon} size={15} />{meta.label} · {meta.tagline}</p>
           <Composer variant="hero" />
-          <CoordinationHint projectId={projectId} />
+          {mode === 'code' && <CoordinationHint projectId={projectId} />}
           <div className="suggestions stagger" key={mode}>
             {suggestions[mode].map(item => (
               <button key={item.title} type="button" className="suggestion spotlight" onMouseMove={spotlight} onClick={() => setDraft(`new:${mode}`, item.prompt)}>
@@ -67,10 +66,10 @@ export function HomeView() {
           </div>
         </section>
 
-        <section className="home__grid">
+        {mode === 'code' && <section className="home__grid">
           <div className="card card--heat spotlight" onMouseMove={spotlight}>
             <div className="card__head">
-              <span className="card__title"><Icon name="activity" size={15} />活动</span>
+              <span className="card__title"><Icon name="activity" size={15} />全局活动</span>
               <span className="grow" />
               <Segmented size="sm" value={metric} onChange={setMetric} options={[{ value: 'events', label: '事件' }, { value: 'modelCalls', label: '模型' }, { value: 'toolEffects', label: '工具' }]} />
             </div>
@@ -79,22 +78,22 @@ export function HomeView() {
 
           <div className="stat-stack">
             <div className="stat spotlight" onMouseMove={spotlight}>
-              <span className="stat__label"><StatusDot tone="accent" pulse={live.length > 0} />运行中</span>
+              <span className="stat__label"><StatusDot tone="accent" pulse={live.length > 0} />全局运行中</span>
               <strong className="stat__value num">{live.length}</strong>
               <span className="stat__hint">{live.length ? live.map(s => s.title).slice(0, 2).join('、') : '没有正在运行的会话'}</span>
             </div>
             <div className="stat spotlight" onMouseMove={spotlight}>
-              <span className="stat__label"><Icon name="shieldAlert" size={13} />待审批</span>
+              <span className="stat__label"><Icon name="shieldAlert" size={13} />全局待审批</span>
               <strong className="stat__value num">{Object.keys(approvals).length}</strong>
               <span className="stat__hint">{Object.keys(approvals).length ? '有操作在等你决定' : '一切顺畅'}</span>
             </div>
             <div className="stat spotlight" onMouseMove={spotlight}>
-              <span className="stat__label"><Icon name="cpu" size={13} />近 7 天模型调用</span>
+              <span className="stat__label"><Icon name="cpu" size={13} />全局近 7 天模型调用</span>
               <strong className="stat__value num">{compactNumber(week.reduce((n, d) => n + d.modelCalls, 0))}</strong>
               <Sparkline values={week.map(d => d.modelCalls)} />
             </div>
           </div>
-        </section>
+        </section>}
 
         <section className="home__recent">
           <div className="section-title">最近{meta.noun}</div>

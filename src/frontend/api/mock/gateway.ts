@@ -745,6 +745,12 @@ export class MockGateway implements NpnGateway {
   // ---------- workspace ----------
   workspace = {
     projects: async () => { await this.pause(90); return clone(this.projectsState); },
+    pickSourceFolder: async () => 'demo/project-' + (this.projectsState.length + 1),
+    editProject: async (id: string | undefined, name: string, folders: string[]) => {
+      const project = { id: id ?? uid('p'), name, path: folders[0]!, sourceFolders: folders, lastOpenedAt: now(), sessions: 0 };
+      this.projectsState = [project, ...this.projectsState.filter(p => p.id !== project.id)];
+      return clone(project);
+    },
     addProject: async () => {
       await this.pause(300);
       const project = { id: uid('p'), name: `新项目 ${this.projectsState.length + 1}`, path: `D:\\Example\\project-${this.projectsState.length + 1}`, lastOpenedAt: now(), sessions: 0, languages: [] };
@@ -773,13 +779,15 @@ export class MockGateway implements NpnGateway {
     get: async () => clone(this.settingsState),
     update: async (patch: DeepPartial<Settings>) => { this.settingsState = merge(this.settingsState, patch); return clone(this.settingsState); },
     models: async () => clone(this.modelsState),
+    discoverModels: async () => this.modelsState.map(m => ({ id: m.model, contextWindow: m.contextWindow, maxOutputTokens: m.maxOutputTokens })),
     saveModel: async (input: ModelProfileInput) => {
       await this.pause(240);
       if (!input.model.trim()) throw new GatewayError('validation', '模型 ID 不能为空');
       if (input.contextWindow !== undefined && (!Number.isInteger(input.contextWindow) || input.contextWindow <= 0)) throw new GatewayError('validation', '上下文窗口必须是正整数');
       if (input.maxOutputTokens !== undefined && input.contextWindow !== undefined && input.maxOutputTokens > input.contextWindow) throw new GatewayError('validation', '最大输出不能超过上下文窗口');
       const existing = input.id ? this.modelsState.find(m => m.id === input.id) : undefined;
-      const saved: ModelProfile = { credentialPresent: existing?.credentialPresent ?? false, remainingLiveRequests: existing?.remainingLiveRequests, ...existing, ...input, id: input.id ?? uid('model'), supportsReasoning: Boolean(input.reasoningLevels?.length) };
+      const { apiKey: _key, allowance: _allowance, ...profileValues } = input;
+      const saved: ModelProfile = { credentialPresent: existing?.credentialPresent ?? false, remainingLiveRequests: existing?.remainingLiveRequests, ...existing, ...profileValues, id: input.id ?? uid('model'), supportsReasoning: Boolean(input.reasoningLevels?.length) };
       this.modelsState = existing ? this.modelsState.map(m => (m.id === saved.id ? saved : m)) : [...this.modelsState, saved];
       this.emit({ type: 'notify', tone: 'success', title: existing ? '模型配置已保存' : '已添加模型', detail: saved.model });
       return clone(saved);
@@ -834,10 +842,12 @@ export class MockGateway implements NpnGateway {
 
   // ---------- desktop ----------
   desktop = {
+    droppedFiles: async (files: File[]): Promise<import("../types").Attachment[]> => files.map(file => ({ id: uid("file"), name: file.name, kind: "file", bytes: file.size })),
     pickFiles: async () => {
       await this.pause(200);
       return [{ id: uid('at'), name: 'archive.ts', kind: 'file' as const, path: 'src/memory/archive.ts', bytes: 14_493 }];
     },
+    officeFile: async () => { throw new Error('请在桌面端生成文件。'); },
     openIde: async () => { this.emit({ type: 'notify', tone: 'info', title: '演示网关未连接 IDE', detail: '接入后台后将打开 NPN 品牌 IDE 宿主' }); },
     copyText: async (text: string) => { await navigator.clipboard.writeText(text); },
     openDataFolder: async () => { this.emit({ type: 'notify', tone: 'info', title: '演示网关没有数据目录' }); },

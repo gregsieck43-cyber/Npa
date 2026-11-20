@@ -5,7 +5,7 @@ export type Tone = 'ok' | 'warn' | 'danger' | 'info' | 'idle' | 'accent';
 
 export const modeMeta: Record<AppMode, { label: string; icon: IconName; noun: string; tagline: string }> = {
   chat: { label: 'Chat', icon: 'chat', noun: '对话', tagline: '快速提问、讨论与写作' },
-  cowork: { label: 'Cowork', icon: 'layers', noun: '长任务', tagline: '目标驱动、可暂停恢复的长程协作' },
+  cowork: { label: 'Cowork', icon: 'layers', noun: '办公会话', tagline: '整理资料、撰写文档与制作汇报' },
   code: { label: 'Code', icon: 'code', noun: '代码任务', tagline: '在项目里读写代码、运行验证' },
 };
 

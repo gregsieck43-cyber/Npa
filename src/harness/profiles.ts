@@ -23,6 +23,7 @@ export interface ModelMetadata {
   maxOutputTokens?: number;
   supportsReasoning?: boolean;
   autoConfig?: boolean;
+  manualFields?: readonly string[];
   inputTypes?: readonly ModelInputType[];
   capabilities?: readonly ModelCapability[];
   reasoningLevels?: readonly string[];
@@ -32,7 +33,7 @@ export interface ModelMetadata {
 export const MODEL_METADATA_LIMITS = {
   contextWindow: 10_000_000,
   maxOutputTokens: 64,
-  maxOutputTokenLimit: 8192,
+  maxOutputTokenLimit: 131072,
   reasoningLevels: 20,
   reasoningLevelChars: 64,
   mappingBytes: 16 * 1024,
@@ -53,7 +54,7 @@ const FORBIDDEN_MAPPING_KEYS = [
 
 const METADATA_KEYS = [
   'providerLabel', 'contextWindow', 'maxOutputTokens', 'supportsReasoning', 'autoConfig',
-  'inputTypes', 'capabilities', 'reasoningLevels', 'reasoningMapping',
+  'inputTypes', 'capabilities', 'reasoningLevels', 'reasoningMapping', 'manualFields',
 ] as const;
 
 const INPUT_TYPES: readonly ModelInputType[] = ['text', 'image', 'video', 'pdf'];
@@ -165,6 +166,7 @@ function parseModelMetadata(value: unknown): ModelMetadata {
   text('providerLabel', 64);
   integer('contextWindow', 1, MODEL_METADATA_LIMITS.contextWindow);
   integer('maxOutputTokens', MODEL_METADATA_LIMITS.maxOutputTokens, MODEL_METADATA_LIMITS.maxOutputTokenLimit);
+  if (input.manualFields !== undefined) output.manualFields = parseEnumList(input.manualFields, 'manualFields', ['contextWindow','maxOutputTokens','inputTypes','capabilities','reasoningLevels','mapping'], 6);
   flag('supportsReasoning'); flag('autoConfig');
   if (input.inputTypes !== undefined) output.inputTypes = Object.freeze(parseEnumList(input.inputTypes, 'inputTypes', INPUT_TYPES, INPUT_TYPES.length));
   if (input.capabilities !== undefined) output.capabilities = Object.freeze(parseEnumList(input.capabilities, 'capabilities', CAPABILITIES, CAPABILITIES.length));

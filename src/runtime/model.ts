@@ -1,3 +1,4 @@
+import { authHeaders, endpoint, normalizeWire, wireBody } from './provider-wire.js';
 import type { ModelResult, ProviderConfig, ToolCall, ToolDefinition, WireMessage } from '../contracts.js';
 import { resourceBudget } from '../app/resource-budget.js';
 
@@ -104,8 +105,8 @@ export class ModelClient {
       maxOutputTokens: config.maxOutputTokens ?? DEFAULT_PROVIDER.maxOutputTokens,
       maxRequestBytes: config.maxRequestBytes ?? DEFAULT_PROVIDER.maxRequestBytes,
     };
-    if (!Number.isInteger(this.config.maxOutputTokens) || this.config.maxOutputTokens < 64 || this.config.maxOutputTokens > 8192) {
-      throw new ModelDiagnosticError('invalid_response', 'maxOutputTokens must be an integer from 64 to 8192.');
+    if (!Number.isInteger(this.config.maxOutputTokens) || this.config.maxOutputTokens < 64 || this.config.maxOutputTokens > 131072) {
+      throw new ModelDiagnosticError('invalid_response', 'maxOutputTokens must be an integer from 64 to 131072.');
     }
     if (!Number.isInteger(this.config.maxRequestBytes) || this.config.maxRequestBytes! < 4096 || this.config.maxRequestBytes! > 262_144) {
       throw new ModelDiagnosticError('invalid_response', 'maxRequestBytes must be an integer from 4096 to 262144.');
@@ -147,7 +148,8 @@ export class ModelClient {
   }
   private async send(rawBody: Record<string, any>, signal?: AbortSignal, onDelta?: (delta: ModelDelta) => void): Promise<ModelResult> {
     if (signal?.aborted) throw new ModelDiagnosticError('cancelled', 'Model request cancelled.');
-    const body = JSON.stringify(rawBody);
+    const body = JSON.stringify(wireBody(structuredClone(rawBody), this.config.wire));
+    if (Buffer.byteLength(body) > this.config.maxRequestBytes!) throw new ModelDiagnosticError('input_limit', 'Encoded request exceeds the configured byte limit.');
     const base = new URL(this.config.baseUrl.endsWith('/') ? this.config.baseUrl : `${this.config.baseUrl}/`);
     const loopback = ['127.0.0.1', 'localhost', '[::1]'].includes(base.hostname);
     if (base.username || base.password || (base.protocol !== 'https:' && !(this.config.mode === 'mock' && loopback && base.protocol === 'http:'))) {
@@ -164,9 +166,9 @@ export class ModelClient {
     try { this.observer?.dispatching?.(); }
     catch (error) { clearTimeout(timer); signal?.removeEventListener('abort', onAbort); throw error; }
     try {
-      const response = await fetch(new URL('chat/completions', base), {
+      const response = await fetch(endpoint(this.config), {
         method: 'POST', signal: controller.signal, redirect: 'error',
-        headers: { 'Content-Type': 'application/json', Accept: 'text/event-stream, application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+        headers: { 'Content-Type': 'application/json', Accept: 'text/event-stream, application/json', ...authHeaders(this.config.wire, token) },
         body,
       });
       try { this.observer?.responseObserved?.(); }
@@ -181,7 +183,7 @@ export class ModelClient {
       if (!response.headers.get('content-type')?.includes('text/event-stream')) {
         const text = await this.readJsonBody(response);
         let body: any;
-        try { body = JSON.parse(text); } catch { throw new ModelDiagnosticError('invalid_response', 'Provider returned invalid JSON.'); }
+        try { body = normalizeWire(JSON.parse(text), this.config.wire); } catch { throw new ModelDiagnosticError('invalid_response', 'Provider returned invalid JSON.'); }
         const choice = body.choices?.[0];
         if (!choice?.message || typeof choice.finish_reason !== 'string') throw new ModelDiagnosticError('invalid_response', 'Provider response has no completed choice.');
         if (choice.message.content != null && typeof choice.message.content !== 'string') throw new ModelDiagnosticError('invalid_response', 'Provider content must be text.');
@@ -231,7 +233,9 @@ export class ModelClient {
       let body: any;
       try { body = JSON.parse(data); } catch { throw new ModelDiagnosticError('invalid_response', 'Provider stream contains invalid JSON.'); }
       if (body.error) throw new ModelDiagnosticError('provider_unavailable', 'Provider reported an error during streaming.', true);
-      if (body.usage) usage = body.usage;
+      body = normalizeWire(body, this.config.wire, true);
+      if (body.done === true && this.config.wire && this.config.wire.format !== 'chat') done = true;
+      if (body.usage) usage = { ...usage, ...body.usage };
       const choice = body.choices?.find((item: any) => item.index === 0) ?? body.choices?.[0];
       if (!choice) return;
       if (choice.finish_reason) finishReason = choice.finish_reason;

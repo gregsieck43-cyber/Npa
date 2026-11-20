@@ -208,13 +208,13 @@ test('raw model requests cannot exceed or remove the profile output allowance or
 test('model configuration validates input and output limits before any request', () => {
   assert.equal(new ModelClient().config.maxRequestBytes, 131_072);
   assert.equal(new ModelClient().config.maxOutputTokens, 4096);
-  for (const maxOutputTokens of [63, 8193, 64.5, NaN]) {
+  for (const maxOutputTokens of [63, 131073, 64.5, NaN]) {
     assert.throws(() => new ModelClient({ maxOutputTokens }), /maxOutputTokens/);
   }
   for (const maxRequestBytes of [4095, 262_145, 5000.5, NaN]) {
     assert.throws(() => new ModelClient({ maxRequestBytes }), /maxRequestBytes/);
   }
-  assert.equal(new ModelClient({ maxOutputTokens: 8192, maxRequestBytes: 4096 }).config.maxOutputTokens, 8192);
+  assert.equal(new ModelClient({ maxOutputTokens: 131072, maxRequestBytes: 4096 }).config.maxOutputTokens, 131072);
 });
 test('role prompts enforce side ownership and wire tool call relationships', () => {
   assert.match(rolePrompt('side', goal), /no ownership/); assert.match(rolePrompt('reviewer', goal), /Missing, stale/);

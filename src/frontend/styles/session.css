@@ -210,7 +210,7 @@
 .composer--hero .composer__input { min-height: 84px; padding: 18px 20px 6px; font-size: var(--fs-17); }
 .composer__bar { display: flex; align-items: center; gap: 6px; padding: 8px 8px 8px 10px; flex-wrap: wrap; }
 .composer__tool { width: 30px; height: 30px; display: grid; place-items: center; border-radius: 50%; color: var(--text-2); border: 1px solid var(--border); position: relative; transition: all var(--t-base) var(--ease-spring); }
-.composer__tool:hover { color: var(--text); background: var(--hover); transform: rotate(90deg); }
+.composer__tool:hover { color: var(--text); background: var(--hover); }
 .composer__toggle { display: inline-flex; align-items: center; gap: 5px; height: 28px; padding: 0 10px; border-radius: var(--r-pill); font-size: var(--fs-12); font-weight: 600; color: var(--text-3); border: 1px solid var(--border); position: relative; transition: all var(--t-fast); }
 .composer__toggle:hover { color: var(--text-2); }
 .composer__toggle.is-on { color: var(--accent); background: var(--accent-softer); border-color: var(--accent-line); }
@@ -320,3 +320,9 @@
 .reasoning__head:active, .tool__head:active { background: var(--hover); }
 
 .approval__conflict { display: flex; flex-direction: column; gap: 7px; margin: 10px 0; padding: 10px; border: 1px solid var(--border); border-radius: var(--r-md); overflow-wrap: anywhere; }
+
+.composer-project { display: flex; align-items: center; gap: 6px; padding: 8px 14px 0; color: var(--text-2); }
+.composer-project > select, .composer-project > button { max-width: 65%; border: 0; border-radius: 5px; background: var(--surface); color: var(--text); padding: 3px 6px; }
+
+.office-output { display:flex; flex-wrap:wrap; align-items:center; gap:8px; margin:10px 0; }
+.office-output small { flex-basis:100%; overflow-wrap:anywhere; }

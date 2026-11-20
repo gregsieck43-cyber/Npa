@@ -1,3 +1,4 @@
+import { isOfficeFile } from '../product/office-input.js';
 import { createHash } from 'node:crypto';
 import { closeSync, openSync, readSync, realpathSync, statSync } from 'node:fs';
 import path from 'node:path';
@@ -53,7 +54,7 @@ const MAX_ROUTE_LENGTH = 8192;
  * refused, exactly as the previous handler did.
  */
 function authorizesWorkspace(method: 'GET' | 'POST', keys: readonly string[]): boolean {
-    return keys.some(key => key === '/v1/workspaces/open' || (method === 'POST' && key === '/v1/product/workspace/projects'));
+    return keys.some(key => key === '/v1/workspaces/open' || (method === 'POST' && (key === '/v1/product/workspace/projects' || key === '/v1/product/workspace/project-edit' || key === '/v1/product/models/configure')));
 }
 
 /** Comparison key: the backend resolves routes without a query, without trailing slashes and, for this guard, without case. */
@@ -194,6 +195,7 @@ function classify(file: string, name: string): { kind: PickedFile['kind']; bytes
     const handle = openSync(file, 'r');
     let content: Buffer;
     try { content = readBoundedSync(handle, name); } finally { closeSync(handle); }
+    if (isOfficeFile(name, content)) return { kind: 'file', bytes: content.length };
     if (isImageSignature(content)) return { kind: 'image', bytes: content.length };
     // A binary byte or malformed UTF-8 anywhere in the file makes the whole file untrustworthy as text.
     if (content.includes(0)) throw new Error(`${name} is a binary file; only UTF-8 text and images can be attached.`);

@@ -1,3 +1,6 @@
+import { createHash, randomUUID } from 'node:crypto';
+import { existsSync, renameSync, rmSync } from 'node:fs';
+import { createOfficeFile, type OfficeFormat } from './office-files.js';
 import { app, BrowserWindow, ipcMain, dialog, Menu, shell, clipboard, type IpcMainInvokeEvent } from 'electron';
 import { mkdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
@@ -156,6 +159,10 @@ if (!app.requestSingleInstanceLock())
     app.quit();
 else {
     const resourceReady = attachResourceBudget(path.join(appRoot, 'native', 'resource-budget.exe'));
+    ipcMain.handle('npn:drop', (event, files: string[]) => {
+        requireTrustedSender(senderTrust(event));
+        return describePickedFiles(files, { protectedRoots: [dataDir] });
+    });
     ipcMain.handle('npn:request', createRequestHandler({ senderTrust, forward: (method, route, body) => request(method, route, body) }));
     ipcMain.handle('npn:desktop', async (event, action: string, payload?: unknown) => {
         requireTrustedSender(senderTrust(event));
@@ -169,6 +176,54 @@ else {
             const validated = await request('GET', `/v1/ide/workspace?path=${encodeURIComponent(workspace)}`);
             if (validated.httpStatus >= 400 || validated.error) throw new Error(validated.error ?? 'IDE workspace was rejected.');
             return launchIde({ productRoot: packageRoot, dataDir, workspace: validated.path, workspaceBoundary: validated.path, inspectPort: argument('--ide-inspect-port') ? Number(argument('--ide-inspect-port')) : undefined, ...ideAssets(packageRoot, appRoot, app.isPackaged) });
+        }
+        if (action === 'office-file') {
+            const input = payload as { sessionId: string; messageId: string; format: OfficeFormat; text?: string; open?: boolean };
+            if (![input?.sessionId, input?.messageId].every(id => typeof id === 'string' && id.length > 0 && id.length < 256)
+                || !['docx','xlsx','pptx','pdf'].includes(input.format)) throw new Error('文件标识无效');
+            const identity = createHash('sha256').update(JSON.stringify([input.sessionId, input.messageId])).digest('hex');
+            const directory = path.join(dataDir, 'office', identity);
+            const names = { docx: '文档', xlsx: '表格', pptx: '演示稿', pdf: '报告' };
+            const filename = path.join(directory, names[input.format] + '.' + input.format);
+            if (!input.open) {
+                if (typeof input.text !== 'string' || !input.text.trim() || input.text.length > 240000) throw new Error('请提供有效的文件内容');
+                mkdirSync(directory, { recursive: true });
+                let bytes: Buffer;
+                if (input.format === 'pdf') {
+                    const pdf = new BrowserWindow({ show: false, webPreferences: { sandbox: true, javascript: false, nodeIntegration: false } });
+                    try {
+                        const safe = input.text.replace(/&/g, '&amp;').replace(/</g, '&lt;');
+                        await pdf.loadURL('data:text/html;charset=utf-8,' + encodeURIComponent('<meta charset=utf-8><style>body{margin:2cm;font:12pt/1.6 sans-serif;white-space:pre-wrap;overflow-wrap:anywhere}</style>' + safe));
+                        bytes = await pdf.webContents.printToPDF({ pageSize: 'A4', printBackground: true });
+                    } finally { pdf.destroy(); }
+                } else bytes = await createOfficeFile(input.format, input.text);
+                const partial = path.join(directory, randomUUID() + '.tmp');
+                try { writeFileSync(partial, bytes, { flag: 'wx' }); renameSync(partial, filename); }
+                finally { rmSync(partial, { force: true }); }
+            }
+            if (!existsSync(filename)) throw new Error('请先生成此格式的文件。');
+            if (input.open) { const error = await shell.openPath(filename); if (error) throw new Error(error); }
+            return filename;
+        }
+        if (action === 'configure-model') {
+            const input = payload as { baseUrl?: string; model?: string; allowance?: number };
+            const choice = await dialog.showMessageBox({ message: '保存模型连接配置？',
+                detail: [input.model, input.baseUrl, input.allowance ? '本次授权请求数（一天内有效）：' + input.allowance : '保留适用的现有额度'].join('\n'),
+                buttons: ['取消', '保存'], defaultId: 1, cancelId: 0 });
+            if (choice.response !== 1) throw new Error('已取消');
+            const result = await request('POST', '/v1/product/models/configure', input);
+            if (result.error || result.httpStatus >= 400) throw new Error(result.error?.message ?? result.error ?? '保存模型失败');
+            return result;
+        }
+        if (action === 'edit-project') {
+            const input = payload as { id?: string; name: string; folders: string[] };
+            if (!Array.isArray(input?.folders) || !input.folders.length || input.folders.length > 32 || input.folders.some(folder => typeof folder !== 'string' || /[\r\n]/.test(folder))) throw new Error('请选择源文件夹');
+            const confirmation = await dialog.showMessageBox({ type: 'question', message: '保存项目并授权以下源文件夹？',
+                detail: input.folders.join('\n'), buttons: ['取消', '保存'], defaultId: 1, cancelId: 0 });
+            if (confirmation.response !== 1) return null;
+            const result = await request('POST', '/v1/product/workspace/project-edit', input);
+            if (result.error || result.httpStatus >= 400) throw new Error(result.error?.message ?? result.error ?? '保存项目失败');
+            return result;
         }
         if (action === 'select-workspace') return (await pickWorkspace()) ?? null;
         if (action === 'open-data')

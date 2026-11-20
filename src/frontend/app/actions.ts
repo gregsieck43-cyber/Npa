@@ -514,7 +514,7 @@ export async function send(text: string, attachments: Attachment[], target: { se
   const permission = session?.permission ?? state.draftPermission ?? state.settings!.defaults.permission;
   const modelId = session?.modelId ?? state.draftModelId ?? state.settings!.defaults.modelId;
   const reasoningEffort = session ? session.reasoningEffort : state.draftReasoning;
-  const result = await guard('发送失败', () => gateway.chat.send({ sessionId, mode: session?.mode ?? target.mode, text, attachments, permission, modelId, reasoningEffort, projectId: target.projectId ?? state.projectId, planFirst: target.planFirst }));
+  const result = await guard('发送失败', () => gateway.chat.send({ sessionId, mode: session?.mode ?? target.mode, ...((session?.mode ?? target.mode) === 'cowork' ? { officeDraft: true } : {}), text, attachments, permission, modelId, reasoningEffort, ...(!session && !target.embedded && state.projects.find(p => p.id === state.projectId)?.sourceFolders?.includes(state.projectFolder ?? '') ? { projectFolder: state.projectFolder } : {}), projectId: session ? session.projectId : target.projectId ?? state.projectId, planFirst: target.planFirst }));
   if (!result) return undefined;
   // A late send acknowledgement must not reopen a closed embedded panel or steal a newer route.
   if (getState().detailEpoch !== state.detailEpoch || getState().detailSessionId !== state.detailSessionId
@@ -614,8 +614,8 @@ export async function branch(sessionId: string, messageId: string) {
 }
 
 export async function promote(sessionId: string, objective: string, acceptance: string[]) {
-  const created = await guard('升级为长任务失败', () => gateway.sessions.promote(sessionId, { objective, acceptance }));
-  if (created) { notify('success', '已升级为 Cowork 长任务'); await openSession(created.id); }
+  const created = await guard('切换到办公会话失败', () => gateway.sessions.promote(sessionId, { objective, acceptance }));
+  if (created) { notify('success', '已升级为 Cowork 办公会话'); await openSession(created.id); }
 }
 
 export async function updateSession(id: string, patch: Partial<Pick<SessionSummary, 'title' | 'pinned' | 'permission' | 'modelId' | 'reasoningEffort'>>) {

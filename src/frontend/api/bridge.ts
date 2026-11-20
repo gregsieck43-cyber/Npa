@@ -21,6 +21,7 @@ import type {
 } from './types';
 
 export interface NpnBridge {
+  droppedFiles?(files: File[]): Promise<Attachment[]>;
   request(method: string, path: string, body?: unknown): Promise<any>;
   desktop(action: string, payload?: unknown): Promise<any>;
 }
@@ -370,6 +371,9 @@ export class BridgeGateway implements NpnGateway {
     // GET /v1/product/workspace/projects
     projects: (): Promise<ProjectView[]> => this.request('GET', '/workspace/projects'),
     // 桌面原生选择器完成授权登记，再从产品项目列表取真实 ProjectView；绝不从渲染进程 POST 任意路径。
+    pickSourceFolder: (): Promise<string | null> => this.desktopCall('select-folder'),
+    editProject: (id: string | undefined, name: string, folders: string[]): Promise<ProjectView | null> =>
+      this.desktopCall('edit-project', { id, name, folders }),
     addProject: async (): Promise<ProjectView | undefined> => {
       const picked = await this.desktopCall('select-workspace');
       if (picked === null || picked === undefined) return undefined;
@@ -379,7 +383,7 @@ export class BridgeGateway implements NpnGateway {
       const projects = await this.request<ProjectView[]>('GET', '/workspace/projects');
       if (!Array.isArray(projects)) throw new GatewayError('invalid_response', 'The product workspace list was not an array.');
       const target = comparablePath(picked);
-      const project = projects.find(item => typeof item?.path === 'string' && comparablePath(item.path) === target);
+      const project = projects.find(item => typeof item?.path === 'string' && (item.sourceFolders ?? [item.path]).some(folder => comparablePath(folder) === target));
       if (!project) throw new GatewayError('not_found', `The selected workspace was not registered: ${picked}`);
       return project;
     },
@@ -435,7 +439,8 @@ export class BridgeGateway implements NpnGateway {
     // GET /v1/product/models
     models: (): Promise<ModelProfile[]> => this.request('GET', '/models'),
     // POST /v1/product/models/save
-    saveModel: (input: ModelProfileInput): Promise<ModelProfile> => this.request('POST', '/models/save', input),
+    discoverModels: (input: import('./types').DiscoveryInput): Promise<import('./types').DiscoveredModel[]> => this.request('POST', '/models/discover', input),
+    saveModel: (input: ModelProfileInput): Promise<ModelProfile> => input.baseUrl || input.wire ? this.desktopCall('configure-model', input) : this.request('POST', '/models/save', input),
     // POST /v1/product/models/:id/remove
     removeModel: async (modelId: string): Promise<void> => {
       await this.request('POST', `/models/${encodeURIComponent(modelId)}/remove`);
@@ -474,6 +479,10 @@ export class BridgeGateway implements NpnGateway {
 
   desktop = {
     // 原生 pick-files（最多 5 项元数据，取消 []）已在主树实现并通过 15/15，仍待主树原生验收。
+    droppedFiles: async (files: File[]): Promise<Attachment[]> => {
+      if (!this.npn.droppedFiles) throw new Error('桌面桥接不支持拖放，请使用添加附件。');
+      return this.npn.droppedFiles(files);
+    },
     pickFiles: async (): Promise<Attachment[]> => {
       const result = await this.desktopCall('pick-files');
       if (result === null || result === undefined) return [];
@@ -481,6 +490,7 @@ export class BridgeGateway implements NpnGateway {
       return result as Attachment[];
     },
     // desktop('open-ide')：有 projectId 时先解析登记路径；取消不是错误。
+    officeFile: (input: { sessionId: string; messageId: string; format: 'docx' | 'xlsx' | 'pptx' | 'pdf'; text?: string; open?: boolean }): Promise<string> => this.desktopCall('office-file', input),
     openIde: async (projectId?: string): Promise<void> => {
       if (projectId === undefined) {
         await this.desktopCall('open-ide');

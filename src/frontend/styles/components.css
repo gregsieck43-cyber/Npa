@@ -41,7 +41,7 @@
   animation: pop-in var(--t-base) var(--ease-out) .35s both;
   top: calc(100% + 6px); left: 50%; translate: -50% 0;
 }
-[data-tip-side="top"]:hover::after { top: auto; bottom: calc(100% + 6px); }
+[data-tip-side="top"]:hover::after, [data-tip-side="top"]:focus-visible::after { top: auto; bottom: calc(100% + 6px); }
 [data-tip-side="right"]:hover::after { top: 50%; left: calc(100% + 8px); translate: 0 -50%; }
 [data-tip-side="bottom-end"]:hover::after, [data-tip-side="bottom-end"]:focus-visible::after { left: auto; right: 0; translate: 0 0; }
 [data-tip-side="left"]:hover::after { top: 50%; left: auto; right: calc(100% + 8px); translate: 0 -50%; }

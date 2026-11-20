@@ -208,7 +208,7 @@ export class ProductSessions implements SessionsDomain {
       return this.branchWork(task, selected);
     }
     const created = await this.branchSession(sessionId, selected);
-    const record = this.indexChatSession(created, { parentSessionId: sessionId });
+    const record = this.indexChatSession(created, { parentSessionId: sessionId, mode: this.rt.store.getSession(sessionId)?.mode });
     const row = this.refresh(record) ?? this.summary(record, 'idle');
     this.rt.append({ type: 'session.upsert', session: row }, record.id);
     return row;
@@ -314,7 +314,7 @@ export class ProductSessions implements SessionsDomain {
     const projectId = patch.projectId !== undefined ? patch.projectId || undefined : existing?.projectId;
     const previewText = recent ?? existing?.preview;
     const record: SessionIndexRecord = {
-      id: session.id, kind: 'chat', mode: 'chat', title: patch.title ?? session.title, status: 'idle',
+      id: session.id, kind: 'chat', mode: patch.mode ?? existing?.mode ?? 'chat', title: patch.title ?? session.title, status: 'idle',
       permission: patch.permission ?? existing?.permission ?? 'read-only', modelId: patch.modelId ?? session.profileId ?? 'default',
       ...(effort ? { reasoningEffort: effort } : {}), ...(projectId ? { projectId } : {}),
       pinned: patch.pinned ?? existing?.pinned ?? false, ...(previewText ? { preview: previewText } : {}),

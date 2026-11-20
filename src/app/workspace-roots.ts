@@ -15,6 +15,8 @@ export interface WorkspaceRootRecord {
   id: string;
   path: string;
   name: string;
+  sourceFolders?: string[];
+  identityPath?: string;
   addedAt: string;
   lastOpenedAt: string;
 }
@@ -66,9 +68,11 @@ export class WorkspaceRoots {
       const { id, path: registeredPath, name, addedAt, lastOpenedAt } = record;
       if (typeof id !== 'string' || !/^[a-f0-9]{24}$/.test(id) || typeof registeredPath !== 'string' || !isLocalPath(registeredPath)
         || typeof name !== 'string' || !name || typeof addedAt !== 'string' || typeof lastOpenedAt !== 'string'
-        || workspaceRootId(registeredPath) !== id || seen.has(id)) throw new Error(INVALID_REGISTRY);
+        || workspaceRootId(typeof record.identityPath === 'string' ? record.identityPath : registeredPath) !== id || seen.has(id)) throw new Error(INVALID_REGISTRY);
       seen.add(id);
-      return { id, path: registeredPath, name, addedAt, lastOpenedAt };
+      const folders = record.sourceFolders;
+      if (folders !== undefined && (!Array.isArray(folders) || folders.length > 32 || folders[0] !== registeredPath || !folders.every(p => typeof p === 'string' && isLocalPath(p)))) throw new Error(INVALID_REGISTRY);
+      return { id, path: registeredPath, name, addedAt, lastOpenedAt, ...(folders ? { sourceFolders: folders as string[] } : {}), ...(typeof record.identityPath === 'string' ? { identityPath: record.identityPath } : {}) };
     });
   }
 
@@ -109,7 +113,7 @@ export class WorkspaceRoots {
   }
 
   contains(target: string): boolean {
-    return this.read().some(record => pathWithin(record.path, target));
+    return this.read().some(record => (record.sourceFolders ?? [record.path]).some(folder => pathWithin(folder, target)));
   }
 
   /**
@@ -118,7 +122,7 @@ export class WorkspaceRoots {
    * 这是项目授权的信任边界：绝对本地路径、真实目录、非驱动器根、非凭据/内核目录、
    * 逐段拒绝符号链接与 junction；重复登记返回现有记录而不重写文件。
    */
-  add(target: string): WorkspaceRootRecord {
+  private checkFolder(target: string): string {
     const absolute = assertLocalPath(target, 'Project folder');
     if (!path.isAbsolute(target)) throw new Error('Project folder must be an explicit absolute path.');
     const info = lstatSync(absolute, { throwIfNoEntry: false });
@@ -130,8 +134,34 @@ export class WorkspaceRoots {
       throw new Error('Credential and protected runtime folders cannot be workspace roots.');
     const canonical = realpathSync(absolute);
     if (canonical.toLowerCase() !== absolute.toLowerCase()) throw new Error('Project folders must not use junctions or symbolic links.');
+    return canonical;
+  }
+
+  edit(id: string | undefined, name: string, folders: string[]): WorkspaceRootRecord {
+    if (!name.trim() || name.length > 100 || !Array.isArray(folders) || !folders.length || folders.length > 32)
+      throw new Error('Enter a project name and select 1–32 source folders.');
+    const sourceFolders = folders.map(folder => this.checkFolder(folder));
+    const unique = new Set(sourceFolders.map(folder => folder.toLowerCase()));
+    if (unique.size !== folders.length) throw new Error('Source folder is repeated.');
+    const records = this.read();
+    const previous = id ? records.find(record => record.id === id) : undefined;
+    if (id && !previous) throw new Error('Project is no longer registered.');
+    if (records.some(record => record.id !== id && (record.sourceFolders ?? [record.path]).some(folder => unique.has(folder.toLowerCase()))))
+      throw new Error('A selected folder already belongs to another project.');
+    if (!previous && records.length >= MAX_ROOTS) throw new Error('Too many registered projects.');
+    const primary = sourceFolders[0]!, now = new Date().toISOString();
+    const record = { id: previous?.id ?? workspaceRootId(primary), identityPath: previous?.identityPath ?? previous?.path ?? primary,
+      path: primary, name: name.trim(), sourceFolders, addedAt: previous?.addedAt ?? now, lastOpenedAt: now };
+    if (!previous && records.some(item => item.id === record.id)) throw new Error('The project identity is already registered.');
+    this.save([...records.filter(item => item.id !== id), record]);
+    return record;
+  }
+
+  add(target: string): WorkspaceRootRecord {
+    const canonical = this.checkFolder(target);
     const records = this.read(), id = workspaceRootId(canonical);
-    const existing = records.find(record => record.id === id);
+    const existing = records.find(record => (record.sourceFolders ?? [record.path]).some(folder => folder.toLowerCase() === canonical.toLowerCase()));
+    if (!existing && records.some(record => record.id === id)) throw new Error("The original project identity is already registered.");
     if (existing) return existing;
     if (records.length >= MAX_ROOTS) throw new Error(`At most ${MAX_ROOTS} explicit project roots can be authorized.`);
     const now = new Date().toISOString();

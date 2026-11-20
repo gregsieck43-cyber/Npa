@@ -1,3 +1,5 @@
+import { discoverModels } from '../runtime/model-directory.js';
+import { wireSettings } from '../runtime/provider-wire.js';
 import { ModelClient, DEFAULT_PROVIDER, type ModelObserver } from '../runtime/model.js';
 import type { RequestContext } from '../harness/types.js';
 import type { ProviderConfig } from '../contracts.js';
@@ -48,9 +50,9 @@ export class Configuration {
         const url = new URL(baseUrl);
         if (mode === 'live' && (url.protocol !== 'https:' || url.username || url.password || url.search || url.hash))
             throw new Error('Live provider requires an HTTPS base URL without credentials, query parameters or a fragment.');
-        const nextProvider = { ...this.provider, mode: mode as 'live' | 'mock', baseUrl, model: String(input.model ?? DEFAULT_PROVIDER.model), maxOutputTokens: Number(input.maxOutputTokens ?? this.provider.maxOutputTokens), maxRequestBytes: Number(input.maxRequestBytes ?? this.provider.maxRequestBytes ?? 131072), supportsDeveloper: input.supportsDeveloper === undefined ? this.provider.supportsDeveloper ?? false : input.supportsDeveloper === true };
-        if (!Number.isInteger(nextProvider.maxOutputTokens) || nextProvider.maxOutputTokens < 64 || nextProvider.maxOutputTokens > 8192)
-            throw new Error('Output token limit must be an integer between 64 and 8192.');
+        const nextProvider = { ...this.provider, ...(input.wire ? { wire: wireSettings(input.wire) } : {}), mode: mode as 'live' | 'mock', baseUrl, model: String(input.model ?? DEFAULT_PROVIDER.model), maxOutputTokens: Number(input.maxOutputTokens ?? this.provider.maxOutputTokens), maxRequestBytes: Number(input.maxRequestBytes ?? this.provider.maxRequestBytes ?? 131072), supportsDeveloper: input.supportsDeveloper === undefined ? this.provider.supportsDeveloper ?? false : input.supportsDeveloper === true };
+        if (!Number.isInteger(nextProvider.maxOutputTokens) || nextProvider.maxOutputTokens < 64 || nextProvider.maxOutputTokens > 131072)
+            throw new Error('Output token limit must be an integer between 64 and 131072.');
         if (!Number.isInteger(nextProvider.maxRequestBytes) || nextProvider.maxRequestBytes < 4096 || nextProvider.maxRequestBytes > 262144)
             throw new Error('Request byte limit must be an integer between 4096 and 262144.');
         const contextValue = input.contextWindowTokens === undefined ? (nextProvider.model === this.provider.model ? this.provider.contextWindowTokens : undefined) : input.contextWindowTokens;
@@ -64,7 +66,8 @@ export class Configuration {
                 nextPaths[name] = input[name] as string[];
             }
         }
-        const providerChanged = nextProvider.baseUrl !== this.provider.baseUrl || nextProvider.model !== this.provider.model;
+        const endpointChanged = baseUrl !== this.provider.baseUrl || JSON.stringify(nextProvider.wire) !== JSON.stringify(this.provider.wire);
+        const providerChanged = endpointChanged || nextProvider.baseUrl !== this.provider.baseUrl || nextProvider.model !== this.provider.model;
         let allowance = providerChanged ? { limit: 0, used: 0, expiresAt: 0 } : this.allowance;
         if (input.authorizePaid === true) {
             const limit = Number(input.maxRequests);
@@ -74,8 +77,8 @@ export class Configuration {
             if (!Number.isInteger(days) || days < 1 || days > 30) throw new Error('Authorization duration must be between 1 and 30 days.');
             allowance = { limit, used: 0, expiresAt: Date.now() + days * 86400000 };
         }
-        let credentialFile = input.credentialFile === undefined ? this.credentialFile : String(input.credentialFile).trim();
-        let credential = this.credential;
+        let credentialFile = input.credentialFile === undefined ? (endpointChanged ? '' : this.credentialFile) : String(input.credentialFile).trim();
+        let credential = endpointChanged ? '' : this.credential;
         if (input.credentialFile !== undefined) credential = credentialFile ? this.readCredentialFile(credentialFile) : '';
         if (typeof input.apiKey === 'string' && input.apiKey.trim()) { credential = input.apiKey.trim(); credentialFile = ''; }
         const sanitize = <T>(value: T): T => JSON.parse(JSON.stringify(value, (_key, item) => typeof item === 'string' && credential ? item.split(credential).join('[credential redacted]') : item));
@@ -90,12 +93,16 @@ export class Configuration {
         this.configurationError = undefined;
         return this.view();
     }
+    discover(base: string, wire: import('../runtime/provider-wire.js').WireSettings, key?: string) {
+        const same = this.provider.mode === 'live' && new URL(base).href === new URL(this.provider.baseUrl).href;
+        return discoverModels(base, wire, key || (same ? this.credential : undefined));
+    }
     client(context?: RequestContext, overrides: Partial<ProviderConfig> = {}, observerOverride?: ModelObserver): ModelClient {
         const config = { ...this.provider, ...overrides, baseUrl: this.provider.baseUrl, mode: this.provider.mode };
         // The credential is requested only after admission, body validation and cancellation checks,
         // immediately before fetch. An unused adapter is free; every reuse is a separate attempt.
         return new ModelClient(config, () => {
-            if (config.mode !== this.provider.mode || config.baseUrl !== this.provider.baseUrl || config.model !== this.provider.model)
+            if (config.mode !== this.provider.mode || config.baseUrl !== this.provider.baseUrl || config.model !== this.provider.model || JSON.stringify(config.wire) !== JSON.stringify(this.provider.wire))
                 throw new Error('The provider changed after this request was prepared. Prepare it again using the current profile.');
             if (this.allowance.used >= this.allowance.limit)
                 throw new Error('Paid requests are blocked. Configure an explicit request allowance in Settings.');

@@ -105,6 +105,8 @@ export interface NpnGateway {
   workspace: {
     projects(): Promise<ProjectView[]>;
     /** 打开系统目录选择器并登记项目；用户取消返回 undefined。 */
+    pickSourceFolder(): Promise<string | null>;
+    editProject(id: string | undefined, name: string, folders: string[]): Promise<ProjectView | null>;
     addProject(): Promise<ProjectView | undefined>;
     /** 取消登记：只移除登记记录，不删除磁盘上的任何文件；已有会话保留但不再关联该项目。 */
     removeProject(projectId: string): Promise<void>;
@@ -126,6 +128,7 @@ export interface NpnGateway {
     update(patch: DeepPartial<Settings>): Promise<Settings>;
     models(): Promise<ModelProfile[]>;
     /** 新建（无 id）或更新模型配置，返回保存后的完整配置。 */
+    discoverModels(input: import('./types').DiscoveryInput): Promise<import('./types').DiscoveredModel[]>;
     saveModel(input: ModelProfileInput): Promise<ModelProfile>;
     removeModel(modelId: string): Promise<void>;
     testModel(modelId: string): Promise<{ ok: boolean; latencyMs?: number; message: string }>;
@@ -145,7 +148,9 @@ export interface NpnGateway {
 
   desktop: {
     /** 打开系统文件选择器，返回可附加到消息的附件；用户取消返回空数组。 */
+    droppedFiles(files: File[]): Promise<Attachment[]>;
     pickFiles(): Promise<Attachment[]>;
+    officeFile(input: { sessionId: string; messageId: string; format: 'docx' | 'xlsx' | 'pptx' | 'pdf'; text?: string; open?: boolean }): Promise<string>;
     openIde(projectId?: string): Promise<void>;
     copyText(text: string): Promise<void>;
     openDataFolder(): Promise<void>;

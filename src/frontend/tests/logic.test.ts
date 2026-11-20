@@ -39,7 +39,7 @@ test('Chat 模式与权限模式无关：只放行读取与联网检索', () => 
 });
 
 test('模型配置：智能推断、推理等级名称、渐变与参数映射', () => {
-  assert.deepEqual(inferModelLimits('z-ai/glm-5.3-flash'), { contextWindow: 1_000_000, maxOutputTokens: 128_000 });
+  assert.deepEqual(inferModelLimits('z-ai/glm-5.3-flash'), { contextWindow: 1_000_000, maxOutputTokens: 131_072 });
   assert.equal(inferModelLimits('unknown/model-x'), undefined);
   assert.equal(reasoningLabel('high'), '高');
   assert.equal(reasoningLabel('max'), '极限');

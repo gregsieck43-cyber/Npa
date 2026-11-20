@@ -1,6 +1,6 @@
 import { memo, useId, useState } from 'react';
-import type { ChatMessage, MessagePart, ToolCallView } from '../../api';
-import { branch, editMessage, openInspector, regenerate } from '../../app/actions';
+import { gateway, type ChatMessage, type MessagePart, type ToolCallView } from '../../api';
+import { guard, branch, editMessage, openInspector, regenerate } from '../../app/actions';
 import { useApp } from '../../app/store';
 import { Icon } from '../../components/Icon';
 import { CopyButton, Markdown } from '../../components/rich';
@@ -94,7 +94,25 @@ function UserMessage({ message, sessionId }: { message: ChatMessage; sessionId: 
   );
 }
 
-export const Message = memo(function Message({ message, sessionId, isLast }: { message: ChatMessage; sessionId: string; isLast: boolean }) {
+function OfficeFile({ sessionId, message }: { sessionId: string; message: ChatMessage }) {
+  const [format, setFormat] = useState<'docx' | 'xlsx' | 'pptx' | 'pdf'>('docx');
+  const [busy, setBusy] = useState(false);
+  const [location, setLocation] = useState('');
+  const text = message.parts.flatMap(p => p.kind === 'text' ? [p.text] : []).join('\n');
+  if (!text.trim()) return null;
+  const run = async (open: boolean) => {
+    setBusy(true);
+    try {
+      const file = await guard(open ? '打开文件失败' : '生成文件失败', () => gateway.desktop.officeFile({ sessionId, messageId: message.id, format, open, text }));
+      if (file) setLocation(file);
+    } finally { setBusy(false); }
+  };
+  return <div className="office-output"><select aria-label="文件格式" className="select" value={format} onChange={e => { setFormat(e.target.value as typeof format); setLocation(''); }}>
+    <option value="docx">Word 文档</option><option value="xlsx">Excel 表格</option><option value="pptx">PowerPoint 演示稿</option><option value="pdf">PDF 报告</option>
+  </select><Button size="sm" disabled={busy} onClick={() => void run(false)}>生成文件</Button><Button size="sm" disabled={busy} onClick={() => void run(true)}>打开文件</Button>{location && <small>{location}</small>}</div>;
+}
+
+export const Message = memo(function Message({ message, sessionId, isLast, office = false }: { message: ChatMessage; sessionId: string; isLast: boolean; office?: boolean }) {
   if (message.role === 'user') return <UserMessage message={message} sessionId={sessionId} />;
 
   const streaming = message.status === 'streaming';
@@ -125,7 +143,7 @@ export const Message = memo(function Message({ message, sessionId, isLast }: { m
             <CopyButton text={plainText(message)} size={14} />
             <IconButton icon="refresh" label="重新生成" size={14} onClick={() => void regenerate(sessionId, message.id)} />
             <IconButton icon="branch" label="从这里分叉" size={14} onClick={() => void branch(sessionId, message.id)} />
-            {message.requestId && <IconButton icon="eye" label="检查实际请求" size={14} onClick={() => openInspector('request', { requestId: message.requestId })} />}
+            {!office && message.requestId && <IconButton icon="eye" label="检查实际请求" size={14} onClick={() => openInspector('request', { requestId: message.requestId })} />}
             {message.usage && (
               <span className="usage-chip num" title="输入 / 输出 tokens（缓存命中）">
                 <Icon name="arrowUp" size={11} />{compactNumber(message.usage.input)}
@@ -136,6 +154,7 @@ export const Message = memo(function Message({ message, sessionId, isLast }: { m
             )}
           </div>
         )}
+        {office && !streaming && message.role === 'assistant' && <OfficeFile sessionId={sessionId} message={message} />}
       </div>
     </div>
   );

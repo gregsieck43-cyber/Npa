@@ -62,11 +62,11 @@ export function SessionView({ id }: { id: string }) {
       <div className="session__main">
         <div ref={scroller} className="thread" onScroll={onScroll}>
           <div className="thread__column">
-            {detail?.task && <TaskBoard task={detail.task} pausing={pausing} />}
+            {detail?.task && <TaskBoard task={detail.task} pausing={pausing} office={detail.mode === 'cowork'} />}
             <MessageHistory sessionId={id} />
             {!detail && <div className="thread__loading"><Skeleton lines={3} /><Skeleton lines={5} /></div>}
             {messages?.length === 0 && <div className="thread__empty muted">这个会话还没有消息。</div>}
-            {messages?.map((message, i) => <Message key={message.id} message={message} sessionId={id} isLast={i === messages.length - 1} />)}
+            {messages?.map((message, i) => <Message key={message.id} message={message} sessionId={id} office={detail?.mode === 'cowork'} isLast={i === messages.length - 1} />)}
           </div>
         </div>
         {(showJump || unseen) && <div className="thread__navigation">

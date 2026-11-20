@@ -95,7 +95,7 @@ function Models({ settings }: { settings: Settings }) {
         </div>
       ))}
       <div className="model-row"><Button size="sm" variant="ghost" icon="plus" onClick={() => setEditing({ key: Date.now() })}>添加模型</Button></div>
-      <div className="set-note"><Icon name="lock" size={12} />API Key 只保存在后台凭据区，前端永远不会显示或导出。</div>
+      <div className="set-note"><Icon name="lock" size={12} />已有密钥以隐藏状态处理；会话密钥在后台退出时清除。</div>
       {editing && <ModelEditor key={editing.key} profile={editing.profile} open onClose={() => setEditing(undefined)} />}
     </Group>
   );

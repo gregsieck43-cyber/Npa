@@ -13,7 +13,10 @@ export function ProjectsView() {
   useEffect(() => { void guard('读取项目失败', () => gateway.workspace.projects()).then(result => setProjects(result ?? [])); }, []);
   const add = async () => {
     const project = await guard('登记项目失败', () => gateway.workspace.addProject());
-    if (project) setProjects(current => [project, ...(current ?? [])]);
+    if (project) {
+      setProjects(current => [project, ...(current ?? []).filter(p => p.id !== project.id)]);
+      setState(current => ({ projects: [project, ...current.projects.filter(p => p.id !== project.id)] }));
+    }
   };
   const open = (project: ProjectView) => { setState({ projectId: project.id }); goHome('code'); };
   const [removing, setRemoving] = useState<ProjectView>();

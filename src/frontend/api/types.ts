@@ -32,7 +32,12 @@ export interface ConnectionInfo {
 export type ModelInputType = 'text' | 'image' | 'video' | 'pdf';
 export type ModelCapability = 'structuredOutput' | 'nativeWebSearch' | 'systemMessageInChat';
 
+export type DiscoveredModel = import("../../provider-types.js").DiscoveredModel;
+export type DiscoveryInput = { id?: string; baseUrl: string; wire: WireSettings; apiKey?: string };
+export type WireSettings = import("../../provider-types.js").WireSettings;
 export interface ModelProfile {
+  baseUrl?: string;
+  wire?: WireSettings;
   id: string;
   name: string;
   provider: string;
@@ -46,6 +51,7 @@ export interface ModelProfile {
   remainingLiveRequests?: number;
   /** 智能配置：由后端按模型 ID 推断上下文与输出上限，界面上对应字段只读显示推断值。 */
   autoConfig?: boolean;
+  manualFields?: string[];
   inputTypes?: ModelInputType[];
   capabilities?: ModelCapability[];
   /** 推理等级，按从低到高排列；空数组或缺省表示不支持调节推理强度。 */
@@ -55,7 +61,7 @@ export interface ModelProfile {
 }
 
 /** 新建或编辑模型配置时提交的字段（凭据不经过前端）。 */
-export type ModelProfileInput = Omit<ModelProfile, 'id' | 'credentialPresent' | 'remainingLiveRequests'> & { id?: string };
+export type ModelProfileInput = Omit<ModelProfile, 'id' | 'credentialPresent' | 'remainingLiveRequests'> & { id?: string; apiKey?: string; allowance?: number };
 
 export type SessionStatus = 'idle' | 'streaming' | 'waiting_approval' | 'waiting_input' | 'running' | 'paused' | 'failed' | 'completed';
 
@@ -452,6 +458,7 @@ export interface MetricsView {
 }
 
 export interface ProjectView {
+  sourceFolders?: string[];
   id: string;
   name: string;
   path: string;
@@ -625,6 +632,8 @@ export interface StateSnapshot {
 }
 
 export interface SendInput {
+  officeDraft?: boolean;
+  projectFolder?: string;
   sessionId?: string;
   mode: AppMode;
   text: string;

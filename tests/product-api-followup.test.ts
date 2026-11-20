@@ -186,7 +186,7 @@ test('ordinary selected text still reaches chat over real HTTP with its file con
   await waitIdle(env, sent.body.sessionId);
 });
 
-test('cowork send rejects an attachment instead of silently dropping it', { timeout: 120000 }, async t => {
+test('legacy Cowork tasks reject attachments, desktop office conversations accept source material', { timeout: 120000 }, async t => {
   const trace: any[] = [];
   const env = await setup({ trace });
   t.after(() => env.close());
@@ -220,6 +220,14 @@ test('cowork send rejects an attachment instead of silently dropping it', { time
 
   await pause(150);
   assert.deepEqual(trace, [], 'a rejected cowork attachment must never dispatch a model request');
+  const accepted = await env.request('POST', '/v1/product/chat/send', {
+    mode: 'cowork', officeDraft: true, text: 'Summarize the note.', permission: 'ask', modelId: 'default', projectId, attachments: [attachments[0]],
+  });
+  assert.equal(accepted.status, 200, JSON.stringify(accepted.body));
+  const detail = await env.request('GET', '/v1/product/sessions/' + accepted.body.sessionId);
+  assert.equal(detail.body.mode, 'cowork');
+  assert.ok(JSON.stringify(detail.body.messages).includes('Cowork attachment fixture text.'));
+  assert.equal(await taskCount(env), tasksBefore, 'office drafting does not create a long-running task');
 });
 
 test('side ask rejects protected selected paths before preparing any model request', { timeout: 120000 }, async t => {

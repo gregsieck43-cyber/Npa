@@ -87,6 +87,10 @@ export class Services {
         return { ...this.configuration.view(), ...this.external.webConfiguration() };
     }
     /** Registered project id -> absolute root; the product API reads it for project-scoped sends. */
+    projectSourcePath(id: string, folder: string): string | undefined {
+        const record = this.workspaceRoots.get(id);
+        return record && (record.sourceFolders ?? [record.path]).find(p => path.relative(p, folder) === '');
+    }
     projectPath(id: string): string | undefined {
         try { return this.workspaceRoots.resolve(id); }
         catch { return undefined; }
@@ -157,7 +161,7 @@ export class Services {
             for (const id of change.left) this.kernel.coordination.externalChanged(change.workspace, 'left', { id });
         }
     }
-    private workspacePath(value: string, requireAuthorization: boolean) {
+    workspacePath(value: string, requireAuthorization: boolean) {
         const target = path.resolve(value);
         assertLocalPath(target, 'Workspace');
         if (target === path.parse(target).root) throw new Error('Select a specific project folder, not a drive root.');
@@ -250,7 +254,7 @@ export class Services {
         if (!value || !path.isAbsolute(value)) throw new Error('Select an explicit absolute IDE workspace.');
         const workspace = this.assertWorkspacePath(value);
         if (!(await stat(workspace)).isDirectory()) throw new Error('IDE workspace must be an existing directory.');
-        return { id: createHash('sha256').update(workspace.toLowerCase()).digest('hex').slice(0, 24), path: workspace };
+        return { id: this.workspaceRoots.list().find(r => r.path.toLowerCase() === workspace.toLowerCase())?.id ?? createHash('sha256').update(workspace.toLowerCase()).digest('hex').slice(0, 24), path: workspace };
     }
     async files(input: URLSearchParams) {
         const task = this.task(input.get('taskId'));

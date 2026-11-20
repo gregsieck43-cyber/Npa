@@ -10,7 +10,7 @@ import { taskStatus } from '../../lib/status';
 const stepIcon = { done: 'circleCheck', active: 'activity', todo: 'clock', blocked: 'lock', skipped: 'x' } as const;
 const verdictIcon = { pass: 'circleCheck', fail: 'circleX', pending: 'clock', unknown: 'alert' } as const;
 
-export function TaskBoard({ task, pausing = false }: { task: TaskDetail; pausing?: boolean }) {
+export function TaskBoard({ task, pausing = false, office = false }: { task: TaskDetail; pausing?: boolean; office?: boolean }) {
   const [open, setOpen] = useState(false);
   const status = taskStatus[task.status];
   const done = task.plan.filter(step => step.status === 'done').length;
@@ -35,10 +35,10 @@ export function TaskBoard({ task, pausing = false }: { task: TaskDetail; pausing
           {canResume
             ? <IconButton icon="play" label="继续" disabled={terminal || task.executionPhase === 'awaiting_plan_confirmation'} onClick={() => void controlTask(task.id, task.status === 'failed' ? 'retry' : 'resume')} />
             : <IconButton icon="pause" label={pausePending ? '正在暂停' : '暂停'} aria-busy={pausePending || undefined} aria-disabled={pausePending || undefined} disabled={terminal} onClick={() => { if (!pausePending) void controlTask(task.id, 'pause'); }} />}
-          <IconButton icon="bookmark" label="创建检查点" onClick={() => void controlTask(task.id, 'checkpoint')} />
+          {!office && <IconButton icon="bookmark" label="创建检查点" onClick={() => void controlTask(task.id, 'checkpoint')} />}
           <IconButton icon="listChecks" label="重新规划" disabled={terminal || task.executionPhase === 'planning'} onClick={() => void controlTask(task.id, 'enter_plan')} />
           <IconButton icon="stop" label="终止任务" disabled={terminal} onClick={() => void controlTask(task.id, 'cancel')} />
-          <IconButton icon={open ? 'chevronDown' : 'chevronRight'} label={open ? '收起' : '展开任务详情'} onClick={() => setOpen(!open)} />
+          {!office && <IconButton icon={open ? 'chevronDown' : 'chevronRight'} label={open ? '收起' : '展开任务详情'} onClick={() => setOpen(!open)} />}
         </div>
       </div>
       {open && (

@@ -47,6 +47,7 @@ export interface AppState {
   inspectorFocus?: { requestId?: string; toolCallId?: string };
   paletteOpen: boolean;
   projectId?: string;
+  projectFolder?: string;
   connection?: ConnectionInfo;
   settings?: Settings;
   models: ModelProfile[];

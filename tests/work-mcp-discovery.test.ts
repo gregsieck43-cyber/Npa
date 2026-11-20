@@ -29,16 +29,21 @@ async function fixture(t: import('node:test').TestContext, discoveryArgs: Record
       if(r.method==='tools/call'){appendFileSync('calls',r.params.name+'\\n');return reply({content:[{type:'text',text:'fixture called'}]});}
     }).on('close',()=>{clearInterval(timer);process.exit(0)});`);
   const wire: any[] = [];
-  const backend = await startBackend({ projectRoot: process.cwd(), dataDir: path.join(owned, 'data'), mockOptions: { responder: body => {
+  const startup = startBackend({ projectRoot: process.cwd(), dataDir: path.join(owned, 'data'), mockOptions: { responder: body => {
     wire.push(structuredClone(body));
     if (!body.messages.some((message: any) => message.role === 'tool' && message.tool_call_id === 'discover'))
       return { content: '', toolCalls: [{ id: 'discover', name: 'list_mcp_tools', arguments: discoveryArgs }] };
     return { content: '', toolCalls: [{ id: 'stop', name: 'ask_user', arguments: { question: 'Fixture complete', reason: 'blocker' } }] };
   } } });
+  t.after(async () => {
+    try { await (await startup).close(); }
+    finally { assert.equal(path.dirname(owned), root); rmSync(owned, { recursive: true, force: true }); }
+  });
+  const backend = await startup;
+  if (t.signal.aborted) throw new Error('Test finished during startup');
   const external = backend.services.external;
   const config = { id: 'discovery', name: 'Discovery fixture', command: runtime, args: [server], cwd: owned };
   const pending = await external.connect(config); await external.connect({ ...config, approvedDigest: pending.digest });
-  t.after(async () => { await backend.close(); assert.equal(path.dirname(owned), root); rmSync(owned, { recursive: true, force: true }); });
   const count = (name: string) => existsSync(path.join(owned, name)) ? readFileSync(path.join(owned, name), 'utf8').trim() : '';
   const notify = async () => {
     writeFileSync(path.join(owned, 'notify'), 'yes');

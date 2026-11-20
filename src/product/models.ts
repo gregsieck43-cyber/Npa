@@ -13,7 +13,7 @@ import {
 
 const MODEL_FIELDS = [
   'id', 'name', 'provider', 'model', 'mode', 'contextWindow', 'maxOutputTokens', 'supportsReasoning',
-  'autoConfig', 'inputTypes', 'capabilities', 'reasoningLevels', 'reasoningMapping',
+  'autoConfig', 'manualFields', 'inputTypes', 'capabilities', 'reasoningLevels', 'reasoningMapping',
 ] as const;
 const INPUT_TYPES: readonly ModelInputType[] = ['text', 'image', 'video', 'pdf'];
 const CAPABILITIES: readonly ModelCapability[] = ['structuredOutput', 'nativeWebSearch', 'systemMessageInChat'];
@@ -111,7 +111,10 @@ export class ProductModels implements ModelsDomain {
       // An unnamed provider is only claimed as 'mock' when the profile really is the mock
       // provider; otherwise it is a user-defined 'custom' label, never a guessed brand.
       provider: metadata?.providerLabel ?? (provider.mode === 'mock' ? 'mock' : 'custom'),
+      ...(metadata?.manualFields ? { manualFields: [...metadata.manualFields] } : {}),
       model: provider.model,
+      ...(provider.mode === 'live' ? { baseUrl: provider.baseUrl } : {}),
+      ...(provider.wire ? { wire: provider.wire } : {}),
       mode: provider.mode,
       credentialPresent: profile.credentialPresent,
       maxOutputTokens: provider.maxOutputTokens,
@@ -130,10 +133,16 @@ export class ProductModels implements ModelsDomain {
     return this.rt.harness.profiles.sanitize(error instanceof Error ? error.message : String(error));
   }
 
+  discover(v: Record<string, unknown>) {
+    const config = this.rt.harness.profiles.get(typeof v.id === 'string' ? v.id : 'default');
+    return config.discover(requiredString(v.baseUrl, 'Base URL', 2048), v.wire as import('../runtime/provider-wire.js').WireSettings,
+      typeof v.apiKey === 'string' ? v.apiKey : undefined);
+  }
+
   async list(): Promise<ModelProfile[]> { return this.rt.harness.profiles.list().map(profile => this.view(profile)); }
 
-  async save(input: ModelProfileInput): Promise<ModelProfile> {
-    const body = pickFields(input, MODEL_FIELDS, 'Model profile');
+  async save(input: ModelProfileInput, native = false): Promise<ModelProfile> {
+    const body = pickFields(input, native ? [...MODEL_FIELDS, 'wire', 'baseUrl', 'apiKey', 'allowance'] : MODEL_FIELDS, 'Model profile');
     const name = requiredString(body.name, 'Model name', 100).trim();
     const providerLabel = requiredString(body.provider, 'Provider label', 64).trim();
     const model = requiredString(body.model, 'Model id', 200).trim();
@@ -153,12 +162,11 @@ export class ProductModels implements ModelsDomain {
     const existing = body.id === undefined ? undefined : profiles.list().find(item => item.id === body.id);
     if (body.id !== undefined && !existing) notFound(`Model ${String(body.id)} was not found.`);
     const id = body.id === undefined ? `provider-${randomUUID()}` : String(body.id);
-    // The DTO has no endpoint field: mock profiles always use the local mock URL, live profiles
-    // keep their previously configured HTTPS endpoint or fall back to the built-in one. A caller
-    // can never inject baseUrl/apiKey/headers because unknown fields were rejected above.
-    const baseUrl = mode === 'live' ? (existing?.provider.mode === 'live' ? existing.provider.baseUrl : DEFAULT_PROVIDER.baseUrl) : undefined;
+    // Connection changes arrive through the confirmed native settings action.
+    const baseUrl = mode === 'live' && native && body.baseUrl ? requiredString(body.baseUrl, 'Base URL', 2048) : mode === 'live' ? (existing?.provider.mode === 'live' ? existing.provider.baseUrl : DEFAULT_PROVIDER.baseUrl) : undefined;
     const metadata: ModelMetadata = {
       providerLabel,
+      ...(body.manualFields === undefined ? {} : { manualFields: modelMetadataInput({ manualFields: body.manualFields }).manualFields }),
       ...(contextWindow !== undefined ? { contextWindow } : {}),
       ...(maxOutputTokens !== undefined ? { maxOutputTokens } : {}),
       ...(supportsReasoning !== undefined ? { supportsReasoning } : {}),
@@ -171,7 +179,9 @@ export class ProductModels implements ModelsDomain {
     try {
       // Always pass the id the product committed to: a profile created by Profiles.save with
       // its own id would not match the id whose metadata is written immediately after.
-      const saved = profiles.save({ id, name, provider: { model, mode, ...(baseUrl ? { baseUrl } : {}) } });
+      const saved = profiles.save({ id, name, ...(body.apiKey ? { apiKey: requiredString(body.apiKey, 'API Key', 8192) } : {}),
+        ...(body.allowance ? { authorizePaid: true, maxRequests: boundedInteger(body.allowance, 'Request allowance', 1, 1000000), authorizeDays: 1 } : {}),
+        provider: { model, mode, ...(contextWindow ? { contextWindowTokens: contextWindow } : {}), ...(maxOutputTokens ? { maxOutputTokens } : {}), ...(body.wire ? { wire: body.wire } : {}), ...(baseUrl ? { baseUrl } : {}) } });
       if (saved.id !== id) throw new Error('The provider profile changed identity while saving.');
       profiles.saveMetadata(id, metadata);
     } catch (error) {

@@ -1,17 +1,27 @@
+import catalogRows from './model-catalog.json';
+import type { ModelInputType } from '../api/types';
 /** 模型配置与推理强度相关的纯函数（界面、演示网关与测试共用）。 */
 
 /** 智能配置：按模型 ID 推断上下文窗口与最大输出；未知模型返回 undefined，由用户手填。 */
-const limits: [RegExp, { contextWindow: number; maxOutputTokens: number }][] = [
-  [/glm-5/i, { contextWindow: 1_000_000, maxOutputTokens: 128_000 }],
-  [/deepseek/i, { contextWindow: 128_000, maxOutputTokens: 8_192 }],
-  [/claude/i, { contextWindow: 200_000, maxOutputTokens: 64_000 }],
-  [/gemini/i, { contextWindow: 1_000_000, maxOutputTokens: 65_536 }],
-  [/gpt-|o\d/i, { contextWindow: 400_000, maxOutputTokens: 128_000 }],
-  [/qwen/i, { contextWindow: 256_000, maxOutputTokens: 32_768 }],
-];
-
-export function inferModelLimits(modelId: string) {
-  return limits.find(([pattern]) => pattern.test(modelId))?.[1];
+// Capacity and modality snapshot from models.dev/api.json; provider discovery overrides these facts.
+type CatalogRow = [string, string, string, number, number, ModelInputType[], boolean, boolean];
+const catalog = catalogRows as CatalogRow[];
+export function catalogModel(id: string, baseUrl = '', format = 'chat') {
+  const key = id.toLowerCase().trim();
+  let host = '';
+  try { host = new URL(baseUrl).hostname; } catch { /* An incomplete URL can still match an exact ID. */ }
+  const names = key.split('/'), leaf = names.at(-1)!;
+  if (!key) return undefined;
+  const matches = catalog.filter(r => r[2] === key || r[2] === leaf);
+  return matches.find(r => r[1] === host && r[2] === key)
+    ?? matches.find(r => r[0] === names[0] || (names[0] === 'z-ai' && r[0] === 'zai'))
+    ?? matches.find(r => r[2] === key && r[0] === (format === 'messages' ? 'anthropic' : 'openai'))
+    ?? matches.find(r => r[2] === key)
+    ?? (matches.length === 1 ? matches[0] : undefined);
+}
+export function inferModelLimits(id: string, baseUrl = '', format = 'chat') {
+  const row = catalogModel(id, baseUrl, format);
+  return row && { contextWindow: row[3], maxOutputTokens: row[4] };
 }
 
 const levelNames: Record<string, string> = {

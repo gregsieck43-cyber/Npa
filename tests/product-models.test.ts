@@ -157,7 +157,7 @@ test('save rejects unknown, out-of-range, over-sized and prototype-polluted inpu
     { label: 'context window too large', input: mockInput({ contextWindow: 10_000_001 }), message: /contextWindow/i },
     { label: 'context window fraction', input: mockInput({ contextWindow: 1.5 }), message: /contextWindow/i },
     { label: 'output tokens under 64', input: mockInput({ maxOutputTokens: 63 }), message: /maxOutputTokens/i },
-    { label: 'output tokens over 8192', input: mockInput({ maxOutputTokens: 8193 }), message: /maxOutputTokens/i },
+    { label: 'output tokens over 131072', input: mockInput({ maxOutputTokens: 131073 }), message: /maxOutputTokens/i },
     { label: 'non-boolean supportsReasoning', input: mockInput({ supportsReasoning: 'yes' }), message: /supportsReasoning/i },
     { label: 'non-boolean autoConfig', input: mockInput({ autoConfig: 1 }), message: /autoConfig/i },
     { label: 'unknown input type', input: mockInput({ inputTypes: ['text', 'audio'] }), message: /inputTypes/ },

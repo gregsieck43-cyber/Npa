@@ -28,6 +28,7 @@ export interface RequestRecord {
   id: string; sessionId: string; taskId?: string; runId?: string; parentId?: string; profileId: string;
   kind: 'chat' | 'work' | 'studio' | 'review' | 'side'; createdAt: string; updatedAt: string;
   status: 'draft' | 'running' | 'completed' | 'failed' | 'cancelled'; endpoint: string;
+  wireBody?: Record<string, any>;
   body?: RequestBody; bodyHash: string; sources: PromptPart[]; recordContent: boolean;
   draft: string; response?: ModelResult; error?: { code: string; message: string }; usage?: ModelResult['usage']; durationMs?: number;
   assistantMessageId?: string; exposedToolNames?: string[];

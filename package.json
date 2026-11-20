@@ -1,6 +1,6 @@
 {
   "name": "npn-gamma-agent",
-  "version": "0.7.5",
+  "version": "0.0.1",
   "private": true,
   "type": "module",
   "description": "Persistent local agent desktop, CLI and MCP",
@@ -40,5 +40,9 @@
     "react-dom": "18.3.1",
     "typescript": "5.9.3"
   },
-  "license": "Apache-2.0"
+  "license": "Apache-2.0",
+  "dependencies": {
+    "fflate": "0.8.2",
+    "pptxgenjs": "4.0.1"
+  }
 }
