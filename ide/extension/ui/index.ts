@@ -89,8 +89,8 @@ const composerCard = node('div', 'composer-card');
 const contextRow = node('div', 'context-row');
 const contextLabel = node('span', 'context-label', '从编辑器添加代码上下文'); contextLabel.dataset.testid = 'agent-context';
 const contextIcon = node('span', 'context-icon'); contextIcon.append(svg('code', 12));
-contextRow.append(contextIcon, contextLabel, node('span', 'grow'), button('选区', () => fire('addSelection'), 'quiet chip', 'agent-add-selection', 'plus'));
-const input = node('textarea', 'composer-input'); input.placeholder = '描述你的问题，或添加选区让 Agent 参与…'; input.setAttribute('aria-label', '发送给 NPN Agent'); input.dataset.testid = 'agent-input'; input.maxLength = 100000;
+contextRow.append(contextIcon, contextLabel, node('span', 'grow'), button('添加选区', () => fire('addSelection'), 'quiet chip', 'agent-add-selection', 'plus'));
+const input = node('textarea', 'composer-input'); input.placeholder = '输入消息…'; input.setAttribute('aria-label', '发送给 NPN Agent'); input.dataset.testid = 'agent-input'; input.maxLength = 100000;
 let draftTimer: number | undefined;
 input.addEventListener('input', () => { const key = scope, content = input.value; drafts[key] = content; persist(); clearTimeout(draftTimer); draftTimer = window.setTimeout(() => fire('draft', { key, content }), 300); });
 input.addEventListener('keydown', event => { if (event.key === 'Enter' && (event.ctrlKey || event.metaKey)) { event.preventDefault(); void send(); } });
@@ -103,18 +103,49 @@ const modelLimit = node('input'), toolLimit = node('input'); modelLimit.type = t
 for (const [label, element] of [['模型调用上限', modelLimit], ['工具调用上限', toolLimit]] as const) { const field = node('label'); field.append(node('span', '', label), element); limits.append(field); }
 goalOptions.append(constraints, acceptance, limits);
 const composerBar = node('div', 'composer-bar');
-const toolsLabel = node('label', 'tools-toggle'), tools = node('input'); tools.type = 'checkbox'; tools.checked = Boolean(saved.tools); tools.dataset.testid = 'agent-tools-toggle';
+const more = node('button', 'composer-more');
+more.type = 'button'; more.append(svg('plus', 17)); more.dataset.testid = 'agent-more';
+more.setAttribute('aria-label', '更多操作'); more.title = '更多操作';
+const menu = node('div', 'composer-menu');
+menu.id = 'composer-menu'; menu.popover = 'auto'; menu.setAttribute('role', 'group'); menu.setAttribute('aria-label', '更多操作');
+more.popoverTargetElement = menu;
+const positionMenu = () => {
+  const anchor = more.getBoundingClientRect();
+  menu.style.left = Math.max(6, Math.min(anchor.left, window.innerWidth - 254)) + 'px';
+  menu.style.bottom = Math.max(6, window.innerHeight - anchor.top + 6) + 'px';
+  menu.style.maxHeight = Math.max(80, anchor.top - 12) + 'px';
+};
+menu.addEventListener('beforetoggle', positionMenu);
+window.addEventListener('resize', () => { if (menu.matches(':popover-open')) positionMenu(); });
+const toolsLabel = node('label', 'tools-toggle'), tools = node('input');
+tools.type = 'checkbox'; tools.checked = Boolean(saved.tools); tools.dataset.testid = 'agent-tools-toggle';
 toolsLabel.append(tools, node('span', 'switch'), node('span', '', '启用工具 · 执行前审批'));
 const profile = node('select', 'profile-select'); profile.setAttribute('aria-label', '模型配置'); profile.dataset.testid = 'agent-model';
-tools.addEventListener('change', () => { configurationDirty = true; persist(); });
-profile.addEventListener('change', () => { configurationDirty = true; persist(); });
+const modelControl = node('div', 'model-control'), caption = node('span', 'model-caption');
+caption.setAttribute('aria-hidden', 'true'); modelControl.append(caption, profile);
+function showConfiguration() {
+  const selected = data?.profiles.find(item => item.id === profile.value);
+  caption.textContent = selected?.model.split('/').at(-1) || selected?.name || '选择模型';
+  profile.title = selected ? selected.name + ' · ' + selected.model : '选择模型';
+  const enabled = mode === 'chat' && tools.checked;
+  more.classList.toggle('tools-enabled', enabled);
+  more.title = enabled ? '更多操作 · 已启用工具' : '更多操作';
+}
+for (const control of [tools, profile]) control.addEventListener('change', () => { configurationDirty = true; persist(); showConfiguration(); });
 const sendButton = button('发送', () => { void send(); }, 'send-button', 'agent-send', 'arrow');
-composerBar.append(toolsLabel, node('span', 'grow'), profile, sendButton);
+composerBar.append(more, modelControl, sendButton);
 composerCard.append(contextRow, input, goalOptions, composerBar);
-const metrics = node('div', 'metrics-line', '暂无模型调用 · 原生编辑不消耗模型额度'); metrics.dataset.testid = 'agent-metrics';
+const metrics = node('div', 'metrics-line'); metrics.dataset.testid = 'agent-metrics';
 const inspection = node('div', 'inspection-bar');
-inspection.append(button('实际请求', () => fire('inspect', { kind: 'request' }), 'quiet chip', 'agent-inspect-request', 'eye'), button('任务 / 轨迹', () => fire('inspect', { kind: 'trace' }), 'quiet chip', 'agent-inspect-trace', 'activity'), button('原生终端', () => fire('terminal'), 'quiet chip', 'agent-terminal', 'terminal'), button('Harness', () => fire('openDesktop'), 'quiet chip', 'agent-desktop', 'external'));
-footer.append(composerCard, metrics, inspection);
+inspection.append(
+  button('实际请求', () => fire('inspect', { kind: 'request' }), 'quiet chip', 'agent-inspect-request', 'eye'),
+  button('任务轨迹', () => fire('inspect', { kind: 'trace' }), 'quiet chip', 'agent-inspect-trace', 'activity'),
+  button('原生终端', () => fire('terminal'), 'quiet chip', 'agent-terminal', 'terminal'),
+  button('打开桌面端', () => fire('openDesktop'), 'quiet chip', 'agent-desktop', 'external')
+);
+inspection.addEventListener('click', event => { if ((event.target as Element).closest('button')) menu.hidePopover(); });
+menu.append(toolsLabel, inspection, metrics);
+footer.append(composerCard, menu);
 shell.append(header, nav, contextCard, error, conversation, footer); app.append(shell);
 
 // ---------- 状态渲染 ----------
@@ -162,13 +193,13 @@ function updateState(message: any) {
   if (profile.dataset.options !== profiles) { const value = profile.value || saved.profile; profile.replaceChildren(); for (const item of data?.profiles ?? []) { const option = node('option', '', `${item.name} · ${item.model}`); option.value = item.id; profile.append(option); } if (value && [...profile.options].some(item => item.value === value)) profile.value = value; profile.dataset.options = profiles; }
   if (mode === 'chat' && data?.chat && !busy && !configurationDirty) { profile.value = data.chat.profileId; tools.checked = data.chat.capabilities.tools; }
   goalOptions.hidden = mode !== 'work' || Boolean(data?.task); toolsLabel.hidden = mode !== 'chat';
-  input.placeholder = mode === 'work' ? data?.task ? '补充当前任务的消息；不会偷偷改写已保存目标…' : '描述要达成的具体结果，保存目标后开始…' : '与 Agent 对话，或把代码选区加到上下文…';
+  input.placeholder = mode === 'work' ? data?.task ? '补充当前任务…' : '描述任务目标…' : '输入消息…';
   setLabel(sendButton, busy ? '提交中…' : mode === 'work' && !data?.task ? '创建目标' : '发送');
   sendButton.disabled = busy || !connected || mode === 'chat' && data?.request?.status === 'running';
   const measured = data?.metrics;
-  metrics.textContent = measured ? `${measured.rounds} 轮 · ${measured.steps} 模型步 · ${measured.totalTokens === null ? 'Token 未返回' : measured.totalTokens.toLocaleString() + ' tokens'} · ${measured.toolCalls} 工具` : '暂无模型调用 · 原生编辑不消耗模型额度';
+  metrics.textContent = measured ? `${measured.rounds} 轮 · ${measured.steps} 模型步 · ${measured.totalTokens === null ? 'Token 未返回' : measured.totalTokens.toLocaleString() + ' tokens'} · ${measured.toolCalls} 工具` : '暂无模型调用';
   if (!trusted) metrics.textContent += ' · 受限模式：执行需先信任项目';
-  updateContext(); paintConversation();
+  showConfiguration(); updateContext(); paintConversation();
 }
 function paintConversation() {
   const fingerprint = JSON.stringify({ mode, scope, messages: data?.messages, tools: data?.tools, request: data?.request });

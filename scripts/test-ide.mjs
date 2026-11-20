@@ -1,3 +1,5 @@
+// The acceptance host runs its local mock server and persistence on the same event loop.
+import './test-loopback-http.mjs';
 import assert from 'node:assert/strict';
 import { build } from 'esbuild';
 import { spawn, spawnSync } from 'node:child_process';

@@ -56,7 +56,21 @@ export async function verifyAgentWorkbench(page, workspace, evidence) {
     assert.ok(attached.includes('const total'));
     await ui('agent-input').fill(attached + '\n\n请回应 IDE_DEEP_CHAT_MARKER。'); await ui('agent-send').click();
     await until(() => ui('agent-conversation').innerText(), text => text.includes('Mock response:') && text.includes('IDE_DEEP_CHAT_MARKER'), 'actual model response');
+    const composer = agent.locator('footer.composer');
+    const closedHeight = await composer.evaluate(element => element.clientHeight);
+    const rowFits = await agent.locator('.composer-bar').evaluate(row => {
+      const children = [...row.children].map(item => item.getBoundingClientRect());
+      return row.scrollWidth <= row.clientWidth && children.every(box => box.height > 0 && box.top < children[0].bottom && box.bottom > children[0].top);
+    });
+    assert.ok(rowFits, 'model and send must share a single toolbar row');
+    const composerShot = path.join(evidence, 'ide-composer.png');
+    await composer.screenshot({ path: composerShot }); screenshots.push(composerShot);
+    await ui('agent-more').click();
+    assert.equal(await composer.evaluate(element => element.clientHeight), closedHeight, 'opening actions must not displace the draft');
     await until(() => ui('agent-metrics').innerText(), text => text.includes('1 模型步') && text.includes('tokens'), 'real Chat usage');
+    assert.equal(await ui('agent-tools-toggle').isVisible(), true);
+    await agent.locator('.composer-more').press('Escape');
+    assert.equal(await ui('agent-inspect-request').isVisible(), false);
     await capture('npn-chat-code-context');
   });
   await check('Work saves a real goal and renders the exact pending write approval', async () => {
@@ -93,6 +107,7 @@ export async function verifyAgentWorkbench(page, workspace, evidence) {
     await capture('npn-work-verified');
   });
   await check('Inspector opens the retained actual request rather than a reconstructed UI mock', async () => {
+    await ui('agent-more').click();
     await ui('agent-inspect-request').click();
     await until(() => page.locator('.tabs-container .tab.active .label-name').allTextContents(), values => values.some(value => value === 'inspection.json'), 'actual request inspection tab');
     await capture('npn-real-request-inspector');
